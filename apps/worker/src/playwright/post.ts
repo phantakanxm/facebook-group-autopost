@@ -1,4 +1,6 @@
 // apps/worker/src/playwright/post.ts
+import { resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import type { BrowserContext } from 'playwright';
 import type { PostResult } from '@app/shared';
 import { SELECTORS, firstMatch } from './selectors.js';
@@ -16,11 +18,37 @@ export interface PostInput {
   delayAfterFocus: { min: number; max: number };
 }
 
+function screenshotPath(): string {
+  const dir = resolve(process.cwd(), 'logs', 'screenshots');
+  mkdirSync(dir, { recursive: true });
+  return resolve(dir, `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`);
+}
+
 export async function postToGroup(
   ctx: BrowserContext,
   input: PostInput,
 ): Promise<PostResult> {
   const log = logger.child({ fbUrl: input.fbUrl });
+
+  async function fail(
+    p: import('playwright').Page,
+    category: import('@app/shared').PostResult['errorCategory'],
+    msg: string,
+  ): Promise<import('@app/shared').PostResult> {
+    try {
+      const path = screenshotPath();
+      await p.screenshot({ path, fullPage: false });
+      log.warn({ category, path }, 'post failed');
+      return category !== undefined
+        ? { success: false, errorCategory: category, error: `${msg} (screenshot=${path})` }
+        : { success: false, error: `${msg} (screenshot=${path})` };
+    } catch {
+      return category !== undefined
+        ? { success: false, errorCategory: category, error: msg }
+        : { success: false, error: msg };
+    }
+  }
+
   const page = await ctx.newPage();
   try {
     await page.goto(input.fbUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -28,14 +56,14 @@ export async function postToGroup(
 
     let state = await detectFBState(page);
     if (state.type !== 'ok') {
-      return { success: false, errorCategory: state.type, ...(state.detail !== undefined && { error: state.detail }) };
+      return await fail(page, state.type, state.detail ?? 'detected bad state');
     }
 
     if (input.enableScrollBeforePost) await humanScroll(page);
 
     const composerSelector = await firstMatch(page, SELECTORS.composerOpen);
     if (!composerSelector) {
-      return { success: false, errorCategory: 'selector_not_found', error: 'composer not found' };
+      return await fail(page, 'selector_not_found', 'composer not found');
     }
     await humanClick(page, composerSelector);
     await humanDelay(input.delayAfterFocus.min, input.delayAfterFocus.max);
@@ -57,7 +85,7 @@ export async function postToGroup(
 
     const submitSel = await firstMatch(page, SELECTORS.submitPost);
     if (!submitSel) {
-      return { success: false, errorCategory: 'selector_not_found', error: 'submit not found' };
+      return await fail(page, 'selector_not_found', 'submit not found');
     }
     await humanClick(page, submitSel);
 
@@ -66,7 +94,7 @@ export async function postToGroup(
 
     state = await detectFBState(page);
     if (state.type !== 'ok') {
-      return { success: false, errorCategory: state.type, ...(state.detail !== undefined && { error: state.detail }) };
+      return await fail(page, state.type, state.detail ?? 'detected bad state');
     }
 
     const pendingApproval = await page.locator(SELECTORS.pendingApproval).count();
@@ -79,7 +107,7 @@ export async function postToGroup(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error({ err: msg }, 'postToGroup failed');
-    return { success: false, errorCategory: 'transient', error: msg };
+    return await fail(page, 'transient', msg);
   } finally {
     await page.close();
   }
