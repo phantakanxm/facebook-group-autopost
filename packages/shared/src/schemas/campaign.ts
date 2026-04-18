@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CAMPAIGN_STATUSES, MEDIA_TYPES, MAX_IMAGES_PER_POST } from '../constants.js';
+import { CAMPAIGN_STATUSES, MEDIA_TYPES, MAX_IMAGES_PER_POST } from '../constants';
 
 const campaignBaseSchema = z.object({
   title: z.string().max(120).optional(),

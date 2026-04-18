@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GROUP_SOURCES } from '../constants.js';
+import { GROUP_SOURCES } from '../constants';
 
 const FB_GROUP_URL =
   /^https?:\/\/(www\.|web\.|m\.)?facebook\.com\/groups\/([a-zA-Z0-9][a-zA-Z0-9._-]*)\/?$/;
