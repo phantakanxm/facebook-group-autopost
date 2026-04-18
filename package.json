@@ -1,0 +1,20 @@
+{
+  "name": "facebook-post-automation",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "concurrently -n web,worker -c cyan,magenta \"pnpm -F web dev\" \"pnpm -F worker dev\"",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:migrate": "pnpm -F @app/db migrate",
+    "db:studio": "pnpm -F @app/db studio",
+    "db:seed": "pnpm -F @app/db seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}
