@@ -16,6 +16,7 @@
     "@app/shared": "workspace:*",
     "@prisma/client": "^5.22.0",
     "cron-parser": "^4.9.0",
+    "dotenv": "^16.4.0",
     "node-cron": "^3.0.3",
     "pino": "^9.5.0",
     "pino-pretty": "^11.2.0",

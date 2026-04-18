@@ -23,7 +23,15 @@ export async function pollAndRunOnce(opts: PollOpts): Promise<string | null> {
   if (!due) return null;
 
   logger.info({ campaignId: due.id }, 'picked up due campaign');
-  await runCampaign({ campaignId: due.id, prisma: opts.prisma, adapter: opts.adapter, fastMode: opts.fastMode });
+  const runInput: Parameters<typeof runCampaign>[0] = {
+    campaignId: due.id,
+    prisma: opts.prisma,
+    adapter: opts.adapter,
+  };
+  if (opts.fastMode !== undefined) {
+    runInput.fastMode = opts.fastMode;
+  }
+  await runCampaign(runInput);
   return due.id;
 }
 
