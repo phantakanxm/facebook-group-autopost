@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { GROUP_SOURCES } from '../constants.js';
 
 const FB_GROUP_URL =
-  /^https?:\/\/(www\.|web\.|m\.)?facebook\.com\/groups\/([a-zA-Z0-9._-]+)\/?$/;
+  /^https?:\/\/(www\.|web\.|m\.)?facebook\.com\/groups\/([a-zA-Z0-9][a-zA-Z0-9._-]*)\/?$/;
 
 export function parseGroupUrl(url: string): { fbGroupId: string; canonicalUrl: string } | null {
   const m = url.trim().match(FB_GROUP_URL);
