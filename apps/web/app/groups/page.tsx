@@ -7,6 +7,9 @@ export default function GroupsPage() {
   const bulk = trpc.group.bulkCreate.useMutation({ onSuccess: () => list.refetch() });
   const setActive = trpc.group.setActive.useMutation({ onSuccess: () => list.refetch() });
   const remove = trpc.group.remove.useMutation({ onSuccess: () => list.refetch() });
+  const autoSync = trpc.group.requestAutoSync.useMutation({
+    onSuccess: () => { alert('Worker will open browser to scan your groups. Refresh in a moment.'); list.refetch(); },
+  });
 
   const [urls, setUrls] = useState('');
 
@@ -30,6 +33,12 @@ export default function GroupsPage() {
             className="rounded bg-blue-600 px-4 py-2 text-white"
           >
             Add
+          </button>
+          <button
+            onClick={() => autoSync.mutate()}
+            className="rounded bg-purple-600 px-4 py-2 text-white"
+          >
+            Auto-sync from FB
           </button>
         </div>
         {bulk.data && (

@@ -58,4 +58,13 @@ export const groupRouter = router({
     await ctx.prisma.group.update({ where: { id: input.id }, data: { isActive: false } });
     return { ok: true };
   }),
+
+  requestAutoSync: publicProcedure.mutation(async ({ ctx }) => {
+    // Write a flag row by setting sessionPath marker on User. Worker polls this.
+    await ctx.prisma.user.update({
+      where: { id: ctx.userId },
+      data: { sessionPath: 'pending-group-sync' },
+    });
+    return { ok: true };
+  }),
 });
