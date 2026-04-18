@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="utf-8"><title>Mock FB Composer</title></head>
+<body>
+  <main>
+    <button id="open-composer" aria-label="เขียนบางสิ่งบางอย่าง">เขียนบางสิ่งบางอย่าง</button>
+    <div id="composer" style="display:none;">
+      <div id="editor" contenteditable="true" role="textbox" aria-label="Composer"></div>
+      <input type="file" id="file-input" multiple />
+      <button id="submit" aria-label="โพสต์">โพสต์</button>
+    </div>
+    <div id="feedback" data-testid="feedback"></div>
+  </main>
+  <script>
+    document.getElementById('open-composer').addEventListener('click', () => {
+      document.getElementById('composer').style.display = 'block';
+      document.getElementById('editor').focus();
+    });
+    document.getElementById('editor').addEventListener('paste', (e) => {
+      const text = e.clipboardData.getData('text/plain');
+      document.getElementById('editor').innerText = text;
+      e.preventDefault();
+    });
+    document.getElementById('submit').addEventListener('click', () => {
+      const fb = document.getElementById('feedback');
+      fb.textContent = 'posted:' + document.getElementById('editor').innerText;
+    });
+  </script>
+</body>
+</html>
