@@ -4,6 +4,7 @@ import { groupRouter } from './routers/group.js';
 import { campaignRouter } from './routers/campaign.js';
 import { settingRouter } from './routers/setting.js';
 import { logRouter } from './routers/log.js';
+import { dashboardRouter } from './routers/dashboard.js';
 
 export const appRouter = router({
   session: sessionRouter,
@@ -11,5 +12,6 @@ export const appRouter = router({
   campaign: campaignRouter,
   setting: settingRouter,
   log: logRouter,
+  dashboard: dashboardRouter,
 });
 export type AppRouter = typeof appRouter;

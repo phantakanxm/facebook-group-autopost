@@ -1,6 +1,7 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import { TRPCProvider } from '@/lib/trpc-client';
+import { SessionBanner } from '@/components/session-banner';
 
 export const metadata = { title: 'FB Auto-Post' };
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <a href="/session" className="hover:underline">Session</a>
               </nav>
             </header>
+            <SessionBanner />
             {children}
           </div>
         </TRPCProvider>
