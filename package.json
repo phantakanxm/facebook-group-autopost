@@ -11,7 +11,9 @@
     "typecheck": "pnpm -r typecheck",
     "db:migrate": "pnpm -F @app/db migrate",
     "db:studio": "pnpm -F @app/db studio",
-    "db:seed": "pnpm -F @app/db seed"
+    "db:seed": "pnpm -F @app/db seed",
+    "start:prod": "pm2 start ecosystem.config.js",
+    "stop:prod": "pm2 stop ecosystem.config.js"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",
