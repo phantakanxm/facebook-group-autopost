@@ -2,6 +2,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { runCampaign, type PlaywrightAdapter } from './campaigns/runner.js';
 import { logger } from './logger.js';
+import { handleSessionRequests } from './session/requests.js';
 
 export interface PollOpts {
   prisma: PrismaClient;
@@ -48,6 +49,7 @@ export function startScheduler(opts: PollOpts & { intervalMs?: number }): () => 
     if (stopped || running) return;
     running = true;
     try {
+      await handleSessionRequests('default-user');
       await pollAndRunOnce(opts);
     } catch (err) {
       logger.error({ err }, 'scheduler tick failed');
