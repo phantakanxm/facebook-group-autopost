@@ -1,4 +1,4 @@
-import { router, publicProcedure } from '../trpc.js';
+import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { groupCreateSchema, groupBulkCreateSchema, parseGroupUrl } from '@app/shared';
 

@@ -1,4 +1,4 @@
-import { router, publicProcedure } from '../trpc.js';
+import { router, publicProcedure } from '../trpc';
 
 export const dashboardRouter = router({
   summary: publicProcedure.query(async ({ ctx }) => {
