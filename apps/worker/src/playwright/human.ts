@@ -1,0 +1,54 @@
+import type { Page } from 'playwright';
+import { humanDelay, sleep } from '../utils/delays.js';
+import { bezierPath } from '../utils/bezier.js';
+
+export async function humanMouseMove(page: Page, x: number, y: number): Promise<void> {
+  const from = { x: 0, y: 0 };
+  const steps = 20 + Math.floor(Math.random() * 15);
+  const path = bezierPath(from, { x, y }, steps);
+  for (const pt of path) {
+    await page.mouse.move(pt.x, pt.y);
+    await sleep(10 + Math.random() * 20);
+  }
+}
+
+export async function humanClick(page: Page, selector: string): Promise<void> {
+  const el = page.locator(selector).first();
+  await el.waitFor({ state: 'visible', timeout: 15_000 });
+  const box = await el.boundingBox();
+  if (!box) throw new Error(`humanClick: no bounding box for ${selector}`);
+  const offsetX = box.width * (0.3 + Math.random() * 0.4);
+  const offsetY = box.height * (0.3 + Math.random() * 0.4);
+  const tx = box.x + offsetX;
+  const ty = box.y + offsetY;
+  await humanMouseMove(page, tx, ty);
+  await humanDelay(200, 500);
+  await page.mouse.click(tx, ty);
+}
+
+export async function humanPaste(page: Page, editorSelector: string, text: string): Promise<void> {
+  await page.locator(editorSelector).first().focus();
+  await humanDelay(300, 800);
+  // Use page.evaluate to synthesize a paste event reliably (clipboard API blocked in some headless).
+  await page.evaluate(
+    ({ sel, text }) => {
+      const el = document.querySelector(sel) as HTMLElement | null;
+      if (!el) throw new Error('paste target missing');
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    },
+    { sel: editorSelector, text },
+  );
+}
+
+export async function humanScroll(page: Page): Promise<void> {
+  const amount = 100 + Math.random() * 500;
+  const steps = 5 + Math.floor(Math.random() * 10);
+  for (let i = 0; i < steps; i++) {
+    await page.mouse.wheel(0, amount / steps);
+    await sleep(50 + Math.random() * 150);
+  }
+  await humanDelay(1000, 3000);
+  await page.mouse.wheel(0, -(amount * 0.5));
+}
