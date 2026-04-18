@@ -1,4 +1,4 @@
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure } from '../trpc.js';
 import { z } from 'zod';
 import { campaignCreateSchema, campaignUpdateSchema } from '@app/shared';
 
