@@ -15,9 +15,13 @@ describe('runCampaign', () => {
   afterEach(async () => { await db.cleanup(); });
 
   function makeAdapter(overrides: Partial<PlaywrightAdapter> = {}): PlaywrightAdapter {
+    const postToGroup = vi.fn().mockResolvedValue({ success: true, fbPostUrl: 'https://fb.com/p/1' });
     return {
       verifySession: vi.fn().mockResolvedValue({ valid: true }),
-      postToGroup: vi.fn().mockResolvedValue({ success: true, fbPostUrl: 'https://fb.com/p/1' }),
+      openCampaign: vi.fn().mockResolvedValue({
+        postToGroup,
+        close: vi.fn().mockResolvedValue(undefined),
+      }),
       ...overrides,
     };
   }
@@ -34,7 +38,8 @@ describe('runCampaign', () => {
     const adapter = makeAdapter();
     await runCampaign({ campaignId: campaign.id, prisma, adapter, fastMode: true });
 
-    expect(adapter.postToGroup).toHaveBeenCalledTimes(3);
+    const ctx = await (adapter.openCampaign as ReturnType<typeof vi.fn>).mock.results[0]!.value;
+    expect(ctx.postToGroup).toHaveBeenCalledTimes(3);
     const updated = await prisma.campaign.findUniqueOrThrow({ where: { id: campaign.id } });
     expect(updated.status).toBe('completed');
     const logs = await prisma.postLog.findMany({ where: { campaignId: campaign.id } });
@@ -52,14 +57,18 @@ describe('runCampaign', () => {
     });
 
     const adapter = makeAdapter({
-      postToGroup: vi.fn().mockResolvedValue({ success: false, errorCategory: 'transient', error: 'x' }),
+      openCampaign: vi.fn().mockResolvedValue({
+        postToGroup: vi.fn().mockResolvedValue({ success: false, errorCategory: 'transient', error: 'x' }),
+        close: vi.fn().mockResolvedValue(undefined),
+      }),
     });
     await runCampaign({ campaignId: campaign.id, prisma, adapter, fastMode: true });
 
     const updated = await prisma.campaign.findUniqueOrThrow({ where: { id: campaign.id } });
     expect(updated.status).toBe('paused');
     // 3 groups * (1 initial + 2 retries) = 9 attempts, then stop
-    expect(adapter.postToGroup).toHaveBeenCalledTimes(9);
+    const ctx = await (adapter.openCampaign as ReturnType<typeof vi.fn>).mock.results[0]!.value;
+    expect(ctx.postToGroup).toHaveBeenCalledTimes(9);
   });
 
   it('pauses immediately if session is invalid', async () => {
@@ -78,7 +87,7 @@ describe('runCampaign', () => {
 
     const updated = await prisma.campaign.findUniqueOrThrow({ where: { id: campaign.id } });
     expect(updated.status).toBe('paused');
-    expect(adapter.postToGroup).not.toHaveBeenCalled();
+    expect(adapter.openCampaign).not.toHaveBeenCalled();
   });
 
   it('resumes: skips groups that already have success in PostLog', async () => {
@@ -98,6 +107,7 @@ describe('runCampaign', () => {
     await runCampaign({ campaignId: campaign.id, prisma, adapter, fastMode: true });
 
     // Only groups 1 and 2 posted (group 0 already successful)
-    expect(adapter.postToGroup).toHaveBeenCalledTimes(2);
+    const ctx = await (adapter.openCampaign as ReturnType<typeof vi.fn>).mock.results[0]!.value;
+    expect(ctx.postToGroup).toHaveBeenCalledTimes(2);
   });
 });

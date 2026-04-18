@@ -5,14 +5,18 @@ import { humanDelay } from '../utils/delays.js';
 import { applyJitter, calculateNextRun } from './recurrence.js';
 import { logger } from '../logger.js';
 
-export interface PlaywrightAdapter {
-  verifySession(userId: string): Promise<{ valid: boolean; reason?: string }>;
+export interface CampaignContext {
   postToGroup(input: {
-    userId: string;
     fbUrl: string;
     content: string;
     mediaFiles: string[];
   }): Promise<PostResult>;
+  close(): Promise<void>;
+}
+
+export interface PlaywrightAdapter {
+  verifySession(userId: string): Promise<{ valid: boolean; reason?: string }>;
+  openCampaign(userId: string): Promise<CampaignContext>;
 }
 
 export interface RunCampaignInput {
@@ -67,100 +71,105 @@ export async function runCampaign(input: RunCampaignInput): Promise<void> {
   let consecutiveFails = 0;
   let pauseTriggered = false;
 
-  // 4. Loop groups
-  for (const cg of toPost) {
-    let attempt = 1;
+  // 4. Open one browser context for the whole campaign run
+  const campaignCtx = await adapter.openCampaign(campaign.userId);
+  try {
+    // 5. Loop groups
+    for (const cg of toPost) {
+      let attempt = 1;
 
-    while (attempt <= setting.maxRetryPerGroup + 1) {
-      const logEntry = await prisma.postLog.create({
-        data: {
-          campaignId: campaign.id,
-          groupId: cg.groupId,
-          attempt,
-          status: 'pending',
-          startedAt: new Date(),
-        },
-      });
+      while (attempt <= setting.maxRetryPerGroup + 1) {
+        const logEntry = await prisma.postLog.create({
+          data: {
+            campaignId: campaign.id,
+            groupId: cg.groupId,
+            attempt,
+            status: 'pending',
+            startedAt: new Date(),
+          },
+        });
 
-      const result = await adapter.postToGroup({
-        userId: campaign.userId,
-        fbUrl: cg.group.fbUrl,
-        content: campaign.content,
-        mediaFiles,
-      });
+        const result = await campaignCtx.postToGroup({
+          fbUrl: cg.group.fbUrl,
+          content: campaign.content,
+          mediaFiles,
+        });
 
-      await prisma.postLog.update({
-        where: { id: logEntry.id },
-        data: {
-          status: result.success ? 'success' : 'failed',
-          ...(result.note !== undefined ? { note: result.note } : {}),
-          ...(result.error !== undefined ? { error: result.error } : {}),
-          ...(result.fbPostUrl !== undefined ? { fbPostUrl: result.fbPostUrl } : {}),
-          completedAt: new Date(),
-        },
-      });
+        await prisma.postLog.update({
+          where: { id: logEntry.id },
+          data: {
+            status: result.success ? 'success' : 'failed',
+            ...(result.note !== undefined ? { note: result.note } : {}),
+            ...(result.error !== undefined ? { error: result.error } : {}),
+            ...(result.fbPostUrl !== undefined ? { fbPostUrl: result.fbPostUrl } : {}),
+            completedAt: new Date(),
+          },
+        });
 
-      // Critical failures → abort whole campaign
-      if (
-        !result.success &&
-        (result.errorCategory === 'session_invalid' ||
-          result.errorCategory === 'account_locked' ||
-          result.errorCategory === 'rate_limited')
-      ) {
+        // Critical failures → abort whole campaign
+        if (
+          !result.success &&
+          (result.errorCategory === 'session_invalid' ||
+            result.errorCategory === 'account_locked' ||
+            result.errorCategory === 'rate_limited')
+        ) {
+          await prisma.campaign.update({
+            where: { id: campaignId },
+            data: {
+              status: 'paused',
+              lastError: `${result.errorCategory}: ${result.error ?? ''}`,
+            },
+          });
+          log.warn({ category: result.errorCategory }, 'critical failure — pausing entire campaign');
+          return;
+        }
+
+        if (result.success) {
+          await prisma.group.update({
+            where: { id: cg.groupId },
+            data: { lastPosted: new Date() },
+          });
+          consecutiveFails = 0;
+          break;
+        }
+
+        // Retry path
+        if (attempt <= setting.maxRetryPerGroup) {
+          if (!fastMode) {
+            await humanDelay(setting.retryDelayMinMs, setting.retryDelayMaxMs);
+          }
+          attempt++;
+        } else {
+          // Max retries exhausted — mark as skipped
+          await prisma.postLog.updateMany({
+            where: { campaignId: campaign.id, groupId: cg.groupId, status: 'failed' },
+            data: { status: 'skipped' },
+          });
+          consecutiveFails++;
+          break;
+        }
+      }
+
+      if (consecutiveFails >= setting.stopAfterConsecutiveFailures) {
         await prisma.campaign.update({
           where: { id: campaignId },
           data: {
             status: 'paused',
-            lastError: `${result.errorCategory}: ${result.error ?? ''}`,
+            lastError: `consecutive_failures=${consecutiveFails}`,
           },
         });
-        log.warn({ category: result.errorCategory }, 'critical failure — pausing entire campaign');
-        return;
-      }
-
-      if (result.success) {
-        await prisma.group.update({
-          where: { id: cg.groupId },
-          data: { lastPosted: new Date() },
-        });
-        consecutiveFails = 0;
+        log.warn({ consecutiveFails }, 'consecutive fail threshold reached — paused');
+        pauseTriggered = true;
         break;
       }
 
-      // Retry path
-      if (attempt <= setting.maxRetryPerGroup) {
-        if (!fastMode) {
-          await humanDelay(setting.retryDelayMinMs, setting.retryDelayMaxMs);
-        }
-        attempt++;
-      } else {
-        // Max retries exhausted — mark as skipped
-        await prisma.postLog.updateMany({
-          where: { campaignId: campaign.id, groupId: cg.groupId, status: 'failed' },
-          data: { status: 'skipped' },
-        });
-        consecutiveFails++;
-        break;
+      // Inter-group delay
+      if (!fastMode && toPost.indexOf(cg) < toPost.length - 1) {
+        await humanDelay(setting.delayBetweenGroupsMinMs, setting.delayBetweenGroupsMaxMs);
       }
     }
-
-    if (consecutiveFails >= setting.stopAfterConsecutiveFailures) {
-      await prisma.campaign.update({
-        where: { id: campaignId },
-        data: {
-          status: 'paused',
-          lastError: `consecutive_failures=${consecutiveFails}`,
-        },
-      });
-      log.warn({ consecutiveFails }, 'consecutive fail threshold reached — paused');
-      pauseTriggered = true;
-      break;
-    }
-
-    // Inter-group delay
-    if (!fastMode && toPost.indexOf(cg) < toPost.length - 1) {
-      await humanDelay(setting.delayBetweenGroupsMinMs, setting.delayBetweenGroupsMaxMs);
-    }
+  } finally {
+    await campaignCtx.close();
   }
 
   if (pauseTriggered) return;

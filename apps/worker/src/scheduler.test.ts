@@ -17,7 +17,10 @@ describe('pollAndRunOnce', () => {
   function adapter() {
     return {
       verifySession: vi.fn().mockResolvedValue({ valid: true }),
-      postToGroup: vi.fn().mockResolvedValue({ success: true }),
+      openCampaign: vi.fn().mockResolvedValue({
+        postToGroup: vi.fn().mockResolvedValue({ success: true }),
+        close: vi.fn().mockResolvedValue(undefined),
+      }),
     };
   }
 
