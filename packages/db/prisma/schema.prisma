@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../../../data.db"
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  sessionPath    String?
+  sessionValid   Boolean   @default(false)
+  sessionChecked DateTime?
+  createdAt      DateTime  @default(now())
+
+  groups    Group[]
+  campaigns Campaign[]
+  settings  Setting?
+}
+
+model Group {
+  id         String    @id @default(cuid())
+  userId     String
+  fbGroupId  String
+  fbUrl      String
+  name       String?
+  isActive   Boolean   @default(true)
+  source     String
+  lastPosted DateTime?
+  createdAt  DateTime  @default(now())
+
+  user      User            @relation(fields: [userId], references: [id])
+  postLogs  PostLog[]
+  campaigns CampaignGroup[]
+
+  @@unique([userId, fbGroupId])
+}
+
+model Campaign {
+  id            String    @id @default(cuid())
+  userId        String
+  title         String?
+  content       String
+  mediaFiles    String    @default("[]")
+  mediaType     String    @default("none")
+
+  scheduledAt   DateTime
+  recurrence    String?
+  jitterMinutes Int       @default(15)
+
+  status        String    @default("draft")
+  startedAt     DateTime?
+  completedAt   DateTime?
+  lastError     String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id])
+  groups CampaignGroup[]
+  logs   PostLog[]
+}
+
+model CampaignGroup {
+  campaignId String
+  groupId    String
+  order      Int
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id])
+
+  @@id([campaignId, groupId])
+}
+
+model PostLog {
+  id          String    @id @default(cuid())
+  campaignId  String
+  groupId     String
+  attempt     Int       @default(1)
+  status      String
+  note        String?
+  error       String?
+  fbPostUrl   String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id])
+}
+
+model Setting {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  delayBetweenGroupsMinMs Int @default(180000)
+  delayBetweenGroupsMaxMs Int @default(600000)
+  delayBeforePostMinMs    Int @default(1000)
+  delayBeforePostMaxMs    Int @default(3000)
+  delayAfterFocusMinMs    Int @default(500)
+  delayAfterFocusMaxMs    Int @default(1500)
+
+  maxRetryPerGroup             Int @default(2)
+  retryDelayMinMs              Int @default(60000)
+  retryDelayMaxMs              Int @default(180000)
+  stopAfterConsecutiveFailures Int @default(3)
+
+  enableMouseMove        Boolean @default(true)
+  enableScrollBeforePost Boolean @default(true)
+  enableJitter           Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+}
