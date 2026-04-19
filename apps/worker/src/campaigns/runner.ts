@@ -10,6 +10,20 @@ export interface CampaignContext {
     fbUrl: string;
     content: string;
     mediaFiles: string[];
+    mediaType: 'images' | 'video' | 'none';
+  }): Promise<PostResult>;
+  postListingBatch(input: {
+    primaryGroupFbUrl: string;
+    shareGroupNames: string[];
+    listingKind: 'sale' | 'rent';
+    propertyType: 'flat' | 'house' | 'townhouse';
+    bedrooms: number;
+    bathrooms: number;
+    priceBaht: number;
+    squareMetres?: number | null;
+    location: string;
+    description: string;
+    mediaFiles: string[];
   }): Promise<PostResult>;
   close(): Promise<void>;
 }
@@ -93,6 +107,7 @@ export async function runCampaign(input: RunCampaignInput): Promise<void> {
           fbUrl: cg.group.fbUrl,
           content: campaign.content,
           mediaFiles,
+          mediaType: campaign.mediaType as 'images' | 'video' | 'none',
         });
 
         await prisma.postLog.update({

@@ -20,6 +20,7 @@ describe('runCampaign', () => {
       verifySession: vi.fn().mockResolvedValue({ valid: true }),
       openCampaign: vi.fn().mockResolvedValue({
         postToGroup,
+        postListingBatch: vi.fn().mockResolvedValue({ success: true, fbPostUrl: 'https://fb.com/listing/1' }),
         close: vi.fn().mockResolvedValue(undefined),
       }),
       ...overrides,
@@ -59,6 +60,7 @@ describe('runCampaign', () => {
     const adapter = makeAdapter({
       openCampaign: vi.fn().mockResolvedValue({
         postToGroup: vi.fn().mockResolvedValue({ success: false, errorCategory: 'transient', error: 'x' }),
+        postListingBatch: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined),
       }),
     });
