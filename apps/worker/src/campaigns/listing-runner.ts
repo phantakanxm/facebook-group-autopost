@@ -42,6 +42,12 @@ async function finalizeCampaignIfDone(prisma: PrismaClient, campaignId: string):
     where: { campaignId, status: { in: ['scheduled', 'running'] } },
   });
   if (pending > 0) return;
+  // Don't overwrite a campaign the user already finalized (e.g. via cancel).
+  const current = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { status: true },
+  });
+  if (current && current.status !== 'running') return;
   await prisma.campaign.update({
     where: { id: campaignId },
     data: { status: 'completed', completedAt: new Date() },
@@ -68,6 +74,17 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
   });
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: batch.campaignId } });
   const setting = await prisma.setting.findUniqueOrThrow({ where: { userId: campaign.userId } });
+
+  // Respect user cancellation — if the campaign was cancelled between scheduling and
+  // pickup, unlock this batch and bail out without touching Facebook.
+  if (campaign.status === 'completed' || campaign.status === 'failed') {
+    await prisma.listingBatch.update({
+      where: { id: batchId },
+      data: { status: 'skipped', lastError: 'campaign_cancelled_before_batch' },
+    });
+    log.info({ campaignStatus: campaign.status }, 'campaign already finalized — skipping batch');
+    return;
+  }
 
   // Mark campaign running (idempotent)
   if (campaign.status !== 'running') {

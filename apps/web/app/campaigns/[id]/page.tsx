@@ -35,8 +35,21 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         {d.status === 'paused' && (
           <button onClick={() => resume.mutate({ id })} className="rounded bg-green-600 px-4 py-2 text-white">Resume</button>
         )}
-        {d.status !== 'completed' && d.status !== 'running' && (
-          <button onClick={() => cancel.mutate({ id })} className="rounded bg-neutral-600 px-4 py-2 text-white">Cancel</button>
+        {d.status !== 'completed' && d.status !== 'failed' && (
+          <button
+            onClick={() => {
+              if (d.status === 'running') {
+                const ok = confirm(
+                  'Campaign is currently running. Cancel will stop future groups/batches. The group FB is posting to RIGHT NOW will finish. Continue?',
+                );
+                if (!ok) return;
+              }
+              cancel.mutate({ id });
+            }}
+            className={`rounded px-4 py-2 text-white ${d.status === 'running' ? 'bg-red-600' : 'bg-neutral-600'}`}
+          >
+            {d.status === 'running' ? 'Cancel running' : 'Cancel'}
+          </button>
         )}
       </div>
 

@@ -162,18 +162,30 @@ export const campaignRouter = router({
 
   cancel: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const c = await ctx.prisma.campaign.findUniqueOrThrow({ where: { id: input.id } });
-    if (c.status === 'running') throw new Error('Cannot cancel running campaign');
+    if (c.status === 'completed' || c.status === 'failed') {
+      throw new Error(`Campaign already ${c.status}`);
+    }
+    // Mark all SCHEDULED batches as skipped. Leave 'running' alone — that batch is
+    // mid-Playwright action; it will finish naturally and its final status (completed
+    // or failed) will be recorded truthfully in the log.
     if (c.type === 'listing') {
       await ctx.prisma.listingBatch.updateMany({
         where: { campaignId: c.id, status: 'scheduled' },
         data: { status: 'skipped' },
       });
     }
+    // Flip the campaign itself. If it was running, the runner will see this on its
+    // next iteration (before processing the next group/batch) and bail out. The
+    // currently-posting FB action will complete as-is (cannot abort mid-Playwright).
     await ctx.prisma.campaign.update({
       where: { id: input.id },
-      data: { status: 'completed', completedAt: new Date() },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        lastError: c.status === 'running' ? 'cancelled_by_user_mid_run' : 'cancelled_by_user',
+      },
     });
-    return { ok: true };
+    return { ok: true, wasRunning: c.status === 'running' };
   }),
 
   resume: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {

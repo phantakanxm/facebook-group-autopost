@@ -90,6 +90,16 @@ export async function runCampaign(input: RunCampaignInput): Promise<void> {
   try {
     // 5. Loop groups
     for (const cg of toPost) {
+      // Check if user cancelled mid-run (status flipped out of 'running')
+      const current = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        select: { status: true },
+      });
+      if (!current || current.status !== 'running') {
+        log.info({ status: current?.status }, 'campaign no longer running — stopping group loop');
+        break;
+      }
+
       let attempt = 1;
 
       while (attempt <= setting.maxRetryPerGroup + 1) {
@@ -189,7 +199,16 @@ export async function runCampaign(input: RunCampaignInput): Promise<void> {
 
   if (pauseTriggered) return;
 
-  // 5. Finalize
+  // 5. Finalize — BUT respect user cancellation (campaign flipped out of 'running' mid-loop)
+  const finalCheck = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { status: true },
+  });
+  if (finalCheck && finalCheck.status !== 'running') {
+    log.info({ status: finalCheck.status }, 'campaign finalized externally (likely cancel) — leaving state');
+    return;
+  }
+
   if (campaign.recurrence) {
     const base = calculateNextRun(new Date(), campaign.recurrence);
     if (base) {
