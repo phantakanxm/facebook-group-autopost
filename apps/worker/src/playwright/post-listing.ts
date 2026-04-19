@@ -88,7 +88,15 @@ export async function postListingBatch(
     }
     if (categoryBtn) {
       await humanClick(page, categoryBtn);
-      await humanDelay(1_500, 2_500);
+      // Wait for the listing form to render after category selection. Use either the
+      // kind combobox (dropdown) or a scoped photo input as the "form is ready" marker.
+      const formDeadline = Date.now() + 15_000;
+      while (Date.now() < formDeadline) {
+        if (await firstMatch(page, SELECTORS.listingKindCombobox)) break;
+        if ((await page.locator('[role="dialog"] input[type="file"]').count()) > 0) break;
+        await sleep(500);
+      }
+      await humanDelay(500, 1_500);
     } else if (kindComboEarly) {
       log.info('listing form opened directly — skipping category chooser');
     } else {

@@ -45,9 +45,12 @@ export const SELECTORS = {
     'role=link[name=/ขาย.?\\/?.?เช่า.?อสังหา|Property for sale or rent/i]',
   ],
   // Comboboxes (click to open, then pick role=option)
+  // Scoped to the dialog AND role=combobox specifically — the category chooser has
+  // clickable "role=button" cards with the same name, which would false-match here.
   listingKindCombobox: [
+    '[role="dialog"] [role="combobox"][aria-label*="sale or rent" i]',
+    '[role="dialog"] [role="combobox"][aria-label*="ขาย" i]',
     'role=combobox[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
-    'role=button[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
   ],
   listingKindOptionSale: [
     'role=option[name=/^\\s*(For sale|Sale|ขาย|สำหรับขาย)\\s*$/i]',
