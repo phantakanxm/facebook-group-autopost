@@ -3,3 +3,4 @@ export * from './schemas/campaign.js';
 export * from './schemas/group.js';
 export * from './schemas/setting.js';
 export * from './types.js';
+export * from './schemas/listing.js';
