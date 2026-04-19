@@ -339,6 +339,8 @@ const DICT = {
     'settings.delay.focus.hint': 'Wait after the composer opens',
     'settings.delay.retry': 'Retry delay',
     'settings.delay.retry.hint': 'Wait after a failure before trying again',
+    'settings.listing.delay': 'Listing: delay between batches',
+    'settings.listing.delay.hint': 'Pause between batch dispatches to listing posts',
     'settings.retry.eyebrow': 'Retries',
     'settings.retry.title': 'Failure policy',
     'settings.retry.max': 'Max retry per group',
@@ -358,6 +360,10 @@ const DICT = {
     'settings.toggle.jitter': 'Schedule jitter',
     'settings.toggle.jitter.hint':
       'Shift each post by the jitter window you set per campaign',
+    'settings.listing.eyebrow': 'Listing campaigns',
+    'settings.listing.title': 'Batch controls',
+    'settings.listing.maxbatches': 'Max batches per day',
+    'settings.listing.maxbatches.hint': 'Soft warning — will flag if exceeding this daily batch count',
 
     'confirm.settings.eyebrow': 'Save settings',
     'confirm.settings.title': 'Save new settings?',
@@ -747,6 +753,8 @@ const DICT = {
     'settings.delay.focus.hint': 'รอกี่วินาทีหลังช่องพิมพ์เปิดขึ้นมา',
     'settings.delay.retry': 'หน่วงก่อนลองใหม่',
     'settings.delay.retry.hint': 'พอส่งพลาดแล้วรอกี่วินาทีก่อนลองอีก',
+    'settings.listing.delay': 'ประกาศขาย: หน่วงเวลาระหว่างชุด',
+    'settings.listing.delay.hint': 'พักระหว่างการส่งชุดไปยังประกาศขาย',
     'settings.retry.eyebrow': 'ลองใหม่',
     'settings.retry.title': 'ถ้าส่งไม่สำเร็จ',
     'settings.retry.max': 'ลองใหม่ได้สูงสุดกี่ครั้งต่อกลุ่ม',
@@ -766,6 +774,10 @@ const DICT = {
     'settings.toggle.jitter': 'สุ่มเวลาส่ง',
     'settings.toggle.jitter.hint':
       'เหลื่อมเวลาโพสต์ตามค่า jitter ที่ตั้งไว้ในแต่ละแคมเปญ',
+    'settings.listing.eyebrow': 'ประกาศขาย',
+    'settings.listing.title': 'ควบคุมชุด',
+    'settings.listing.maxbatches': 'จำนวนชุดสูงสุดต่อวัน',
+    'settings.listing.maxbatches.hint': 'เตือน — จะแจ้งถ้าเกินจำนวนชุดต่อวันที่ตั้งไว้',
 
     'confirm.settings.eyebrow': 'บันทึกการตั้งค่า',
     'confirm.settings.title': 'บันทึกการตั้งค่าใหม่?',
