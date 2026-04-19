@@ -75,4 +75,12 @@ export const groupRouter = router({
     });
     return { ok: true };
   }),
+
+  requestCapabilityRescanAll: publicProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.user.update({
+      where: { id: ctx.userId },
+      data: { sessionPath: 'pending-capability-rescan-all' },
+    });
+    return { ok: true };
+  }),
 });

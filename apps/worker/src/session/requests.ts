@@ -23,9 +23,14 @@ export async function handleSessionRequests(userId: string): Promise<void> {
     await autoSyncGroups(userId, prisma);
     await prisma.user.update({ where: { id: userId }, data: { sessionPath: null } });
   } else if (user.sessionPath === 'pending-capability-scan') {
-    logger.info({ userId }, 'capability scan requested');
+    logger.info({ userId }, 'capability scan requested (new groups only)');
     await prisma.user.update({ where: { id: userId }, data: { sessionPath: 'scanning-capabilities' } });
     await scanGroupCapabilities(userId, prisma);
+    await prisma.user.update({ where: { id: userId }, data: { sessionPath: null } });
+  } else if (user.sessionPath === 'pending-capability-rescan-all') {
+    logger.info({ userId }, 'capability re-scan (all) requested');
+    await prisma.user.update({ where: { id: userId }, data: { sessionPath: 'scanning-capabilities' } });
+    await scanGroupCapabilities(userId, prisma, { force: true });
     await prisma.user.update({ where: { id: userId }, data: { sessionPath: null } });
   }
 }

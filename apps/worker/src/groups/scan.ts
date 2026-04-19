@@ -5,21 +5,44 @@ import { SELECTORS, firstMatch } from '../playwright/selectors.js';
 import { humanDelay, sleep } from '../utils/delays.js';
 import { logger } from '../logger.js';
 
+export interface ScanCapabilitiesOpts {
+  /** If true, re-scan groups that already have a `listingScannedAt` value. */
+  force?: boolean;
+}
+
 /**
- * Visit every active group for the user and check whether the "Sell Something"
+ * Visit active groups for the user and check whether the "Sell Something"
  * button exists in the group feed. Stores `supportsListing` + `listingScannedAt`.
+ *
+ * By default skips groups that have been scanned before. Pass `{ force: true }`
+ * to re-scan everything (e.g. when FB may have changed group capabilities).
  *
  * Slow (~5-10s/group) but capability rarely changes — run once per day/week.
  */
 export async function scanGroupCapabilities(
   userId: string,
   prisma: PrismaClient,
-): Promise<{ scanned: number; listingCapable: number }> {
+  opts: ScanCapabilitiesOpts = {},
+): Promise<{ scanned: number; listingCapable: number; skipped: number }> {
   const groups = await prisma.group.findMany({
-    where: { userId, isActive: true },
+    where: {
+      userId,
+      isActive: true,
+      ...(opts.force ? {} : { listingScannedAt: null }),
+    },
     orderBy: { createdAt: 'asc' },
   });
-  if (groups.length === 0) return { scanned: 0, listingCapable: 0 };
+
+  // Report how many active groups were skipped (already scanned + not forced)
+  const totalActive = await prisma.group.count({
+    where: { userId, isActive: true },
+  });
+  const skipped = totalActive - groups.length;
+
+  if (groups.length === 0) {
+    logger.info({ skipped, totalActive, force: opts.force ?? false }, 'capability scan: nothing to do');
+    return { scanned: 0, listingCapable: 0, skipped };
+  }
 
   const ctx = await launchBrowser({ userId, headless: false });
   let listingCapable = 0;
@@ -49,8 +72,8 @@ export async function scanGroupCapabilities(
       // Human-like delay between groups (short since we're only reading, not posting)
       await humanDelay(2_000, 5_000);
     }
-    logger.info({ scanned: groups.length, listingCapable }, 'capability scan complete');
-    return { scanned: groups.length, listingCapable };
+    logger.info({ scanned: groups.length, listingCapable, skipped, force: opts.force ?? false }, 'capability scan complete');
+    return { scanned: groups.length, listingCapable, skipped };
   } finally {
     await ctx.close();
   }
