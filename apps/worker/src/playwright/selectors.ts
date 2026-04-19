@@ -80,10 +80,21 @@ export const SELECTORS = {
     'role=textbox[name=/Square metres|Square meters|ตารางเมตร|ขนาด.*ตรม/i]',
   ],
   // Location combobox + its suggestion listbox
+  // FB's location input is a role=combobox with aria-autocomplete="list" — accessible
+  // name varies (sometimes blank, sometimes "Location", sometimes "Property location").
+  // Try role-based first, then aria-label, then placeholder, then generic autocomplete
+  // attributes scoped inside the dialog.
   listingLocationCombobox: [
-    'role=combobox[name=/^\\s*(Location|ตำแหน่ง|ที่อยู่)\\s*$/i]',
+    'role=combobox[name=/Location|Property location|ตำแหน่ง|ที่อยู่|สถานที่|ที่ตั้ง/i]',
+    'role=textbox[name=/Location|Property location|ตำแหน่ง|ที่อยู่|สถานที่|ที่ตั้ง/i]',
+    '[role="dialog"] input[aria-label*="location" i]',
+    '[role="dialog"] input[aria-label*="ตำแหน่ง"]',
+    '[role="dialog"] input[aria-label*="ที่อยู่"]',
     '[role="dialog"] input[placeholder*="Location" i]',
     '[role="dialog"] input[placeholder*="ตำแหน่ง"]',
+    '[role="dialog"] input[aria-autocomplete="list"]',
+    '[role="dialog"] input[aria-autocomplete="both"]',
+    '[role="dialog"] input[type="search"]',
   ],
   listingLocationFirstOption: '[role="listbox"] >> role=option >> nth=0',
   // Description textbox
