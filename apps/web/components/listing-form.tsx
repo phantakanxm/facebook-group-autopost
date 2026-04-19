@@ -4,6 +4,12 @@ import { trpc } from '@/lib/trpc-client';
 import type { ListingKind, PropertyType } from '@app/shared';
 import { MAX_PHOTOS_PER_LISTING, MAX_GROUPS_PER_BATCH } from '@app/shared';
 import { BatchPreview } from './batch-preview';
+import { Button } from '@/components/ui/button';
+import { Input, Textarea, Select, Field } from '@/components/ui/field';
+import { Surface, SectionHeader, Divider } from '@/components/ui/section';
+import { useConfirm, useToast, useLoading } from '@/components/ui/feedback';
+import { useT, useLocale } from '@/lib/i18n';
+import { cn } from '@/lib/cn';
 
 interface MediaItem {
   path: string;
@@ -22,6 +28,10 @@ function isHeicFile(name: string, type: string): boolean {
 }
 
 export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const loc = locale === 'th' ? 'th-TH' : 'en-GB';
+
   const [listingKind, setListingKind] = useState<ListingKind>('sale');
   const [propertyType, setPropertyType] = useState<PropertyType>('house');
   const [bedrooms, setBedrooms] = useState<number>(3);
@@ -31,7 +41,9 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
   const [location, setLocation] = useState('');
   const [content, setContent] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [jitterMinutes, setJitterMinutes] = useState(15);
+  // Jitter not exposed in UI for listings — batch spacing is controlled by
+  // delayBetweenBatches* in Settings. Send 0 to skip start-time jitter.
+  const jitterMinutes = 0;
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
@@ -39,6 +51,10 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
   const settings = trpc.setting.get.useQuery();
   const scan = trpc.group.requestCapabilityScan.useMutation();
   const create = trpc.campaign.createListing.useMutation();
+
+  const confirm = useConfirm();
+  const toast = useToast();
+  const loading = useLoading();
 
   const listingGroups = useMemo(
     () => (groups.data ?? []).filter((g) => g.isActive && g.supportsListing),
@@ -54,7 +70,7 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
-      alert(body.error ?? `Upload failed (${res.status})`);
+      toast.error(t('listing.toast.uploadFail'), body.error ?? `(${res.status})`);
       return;
     }
     type RawItem = { path: string; url: string; name: string; size: number; type: string };
@@ -74,7 +90,7 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
     });
   }
 
-  // HEIC → JPEG conversion
+  // HEIC → JPEG conversion for preview
   useEffect(() => {
     const toConvert = mediaItems
       .map((it, i) => ({ it, i }))
@@ -113,155 +129,408 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
   const minDelayMinutes = Math.round((settings.data?.delayBetweenBatchesMinMs ?? 1_800_000) / 60_000);
   const maxDelayMinutes = Math.round((settings.data?.delayBetweenBatchesMaxMs ?? 3_600_000) / 60_000);
 
+  const selectAll = () => setSelectedGroupIds(listingGroups.map((g) => g.id));
+  const clearAll = () => setSelectedGroupIds([]);
+
+  // ---------- No-groups empty state ----------
   if (!groups.isLoading && listingGroups.length === 0) {
     return (
-      <div className="rounded border border-amber-200 bg-amber-50 p-4">
-        <p className="font-medium text-amber-900">No listing-capable groups yet.</p>
-        <p className="mt-2 text-sm text-amber-800">
-          Run a capability scan to detect which groups support Facebook Marketplace listings.
-        </p>
-        <button
-          onClick={() => scan.mutate(undefined, { onSuccess: () => alert('Scan requested. Worker will open browser. Refresh shortly.') })}
-          className="mt-3 rounded bg-amber-600 px-4 py-2 text-sm text-white"
-          disabled={scan.isPending}
-        >
-          {scan.isPending ? 'Requesting…' : 'Run scan now'}
-        </button>
-      </div>
+      <Surface>
+        <div className="flex flex-col items-start gap-4">
+          <span
+            aria-hidden
+            className="grid h-10 w-10 place-items-center rounded-full bg-[color-mix(in_oklch,var(--caution)_15%,transparent)] text-[var(--caution)]"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M9 6.5v3M9 11.7v.1"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+              <path
+                d="M9 2.5L16 15H2L9 2.5Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <div className="flex flex-col gap-2">
+            <h3 className="font-display text-xl tracking-editorial text-ink">
+              {t('listing.noGroups.title')}
+            </h3>
+            <p className="max-w-[56ch] text-sm text-ink-muted">
+              {t('listing.noGroups.desc')}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                await loading.wrap(t('common.working.scan'), () => scan.mutateAsync());
+                toast.info(t('toast.groups.scan.ok'), t('toast.groups.scan.ok.desc'));
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : '';
+                toast.error(t('toast.groups.scan.fail'), msg);
+              }
+            }}
+            disabled={scan.isPending}
+          >
+            {scan.isPending ? t('listing.noGroups.pending') : t('listing.noGroups.cta')}
+          </Button>
+        </div>
+      </Surface>
     );
   }
 
+  // ---------- Main form ----------
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        if (selectedGroupIds.length === 0) { alert('Select at least one group.'); return; }
-        if (mediaItems.length === 0) { alert('Upload at least one photo.'); return; }
+        if (selectedGroupIds.length === 0) {
+          toast.error(t('listing.err.noGroups'));
+          return;
+        }
+        if (mediaItems.length === 0) {
+          toast.error(t('listing.err.noPhotos'));
+          return;
+        }
+        const fullBatches = Math.floor(selectedGroupIds.length / MAX_GROUPS_PER_BATCH);
+        const remainder = selectedGroupIds.length % MAX_GROUPS_PER_BATCH;
+        const batchCount = fullBatches + (remainder > 0 ? 1 : 0);
+        const ok = await confirm({
+          eyebrow: t('listing.confirm.eyebrow'),
+          title: t('listing.confirm.title'),
+          description: t('listing.confirm.desc', {
+            n: selectedGroupIds.length,
+            b: batchCount,
+          }),
+          confirmLabel: t('listing.confirm.cta'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (!ok) return;
         try {
-          const result = await create.mutateAsync({
-            listingKind, propertyType,
-            bedrooms, bathrooms, priceBaht,
-            squareMetres: typeof squareMetres === 'number' ? squareMetres : null,
-            location, content,
-            scheduledAt: new Date(scheduledAt),
-            jitterMinutes,
-            mediaFiles: mediaItems.map((m) => m.path),
-            groupIds: selectedGroupIds,
-          });
+          const result = await loading.wrap(t('common.working.submit'), () =>
+            create.mutateAsync({
+              listingKind,
+              propertyType,
+              bedrooms,
+              bathrooms,
+              priceBaht,
+              squareMetres: typeof squareMetres === 'number' ? squareMetres : null,
+              location,
+              content,
+              scheduledAt: new Date(scheduledAt),
+              jitterMinutes,
+              mediaFiles: mediaItems.map((m) => m.path),
+              groupIds: selectedGroupIds,
+            }),
+          );
+          toast.success(
+            t('listing.toast.ok'),
+            t('listing.toast.ok.desc', { n: selectedGroupIds.length, b: batchCount }),
+          );
           onSaved?.(result.id);
-        } catch (err) {
-          alert(err instanceof Error ? err.message : 'Failed to schedule listing');
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : '';
+          toast.error(t('listing.toast.fail'), msg);
         }
       }}
-      className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]"
+      className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]"
     >
-      <div className="space-y-5">
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Property details</h3>
-          <div className="space-y-3">
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" checked={listingKind === 'sale'} onChange={() => setListingKind('sale')} /> Sale
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" checked={listingKind === 'rent'} onChange={() => setListingKind('rent')} /> Rent
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm">Property type</label>
-              <select value={propertyType} onChange={(e) => setPropertyType(e.target.value as PropertyType)} className="rounded border p-2">
-                <option value="flat">Flat</option>
-                <option value="house">House</option>
-                <option value="townhouse">Townhouse</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="text-sm">Bedrooms
-                <input type="number" min={0} value={bedrooms} onChange={(e) => setBedrooms(Number(e.target.value))} className="mt-1 w-full rounded border p-2" />
-              </label>
-              <label className="text-sm">Bathrooms
-                <input type="number" min={0} value={bathrooms} onChange={(e) => setBathrooms(Number(e.target.value))} className="mt-1 w-full rounded border p-2" />
-              </label>
-              <label className="text-sm">Price (฿)
-                <input type="number" min={0} value={priceBaht} onChange={(e) => setPriceBaht(Number(e.target.value))} className="mt-1 w-full rounded border p-2" required />
-              </label>
-              <label className="text-sm">Square metres (optional)
-                <input type="number" min={1} value={squareMetres} onChange={(e) => setSquareMetres(e.target.value === '' ? '' : Number(e.target.value))} className="mt-1 w-full rounded border p-2" />
-              </label>
+      {/* ------------- Main column ------------- */}
+      <div className="space-y-8">
+        {/* Property details */}
+        <Surface>
+          <SectionHeader eyebrow={t('form.step01')} title={t('listing.section.property')} />
+          <div className="space-y-5 pt-3">
+            {/* Sale / Rent segmented */}
+            <Field label={t('listing.field.propertyType')}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div
+                  role="tablist"
+                  className="inline-flex h-10 items-center rounded-md border border-line-strong bg-surface p-0.5"
+                >
+                  {(['sale', 'rent'] as const).map((k) => {
+                    const active = listingKind === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setListingKind(k)}
+                        className={cn(
+                          'relative z-10 inline-flex h-9 items-center justify-center rounded-[5px] px-5',
+                          'text-sm font-medium transition-colors duration-200',
+                          active
+                            ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
+                            : 'text-ink-muted hover:text-ink',
+                        )}
+                      >
+                        {k === 'sale' ? t('listing.kind.sale') : t('listing.kind.rent')}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value as PropertyType)}
+                  className="sm:max-w-[220px]"
+                >
+                  <option value="flat">{t('listing.type.flat')}</option>
+                  <option value="house">{t('listing.type.house')}</option>
+                  <option value="townhouse">{t('listing.type.townhouse')}</option>
+                </Select>
+              </div>
+            </Field>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label={t('listing.field.bedrooms')}>
+                <Input
+                  type="number"
+                  min={0}
+                  value={bedrooms}
+                  onChange={(e) => setBedrooms(Number(e.target.value))}
+                  className="tnum"
+                />
+              </Field>
+              <Field label={t('listing.field.bathrooms')}>
+                <Input
+                  type="number"
+                  min={0}
+                  value={bathrooms}
+                  onChange={(e) => setBathrooms(Number(e.target.value))}
+                  className="tnum"
+                />
+              </Field>
+              <Field label={t('listing.field.price')} required hint={t('listing.field.price.suffix')}>
+                <Input
+                  type="number"
+                  min={0}
+                  value={priceBaht}
+                  onChange={(e) => setPriceBaht(Number(e.target.value))}
+                  required
+                  className="tnum"
+                />
+              </Field>
+              <Field
+                label={t('listing.field.sqm')}
+                hint={`${t('listing.field.sqm.suffix')} · ${t('listing.field.sqm.hint')}`}
+              >
+                <Input
+                  type="number"
+                  min={1}
+                  value={squareMetres}
+                  onChange={(e) =>
+                    setSquareMetres(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="tnum"
+                />
+              </Field>
             </div>
           </div>
-        </section>
+        </Surface>
 
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Location</h3>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full rounded border p-2" placeholder="e.g. Urban Property Udon, Udon Thani" required />
-          <p className="mt-1 text-xs text-neutral-500">Worker will type this into Facebook and pick the first autocomplete suggestion.</p>
-        </section>
-
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Description</h3>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} required className="w-full rounded border p-2" />
-        </section>
-
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Photos (up to {MAX_PHOTOS_PER_LISTING})</h3>
-          <label className="block cursor-pointer rounded border border-dashed p-4 text-center text-sm text-neutral-600">
-            <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" className="hidden" onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
-            Click to upload images
-          </label>
-          {mediaItems.length > 0 && (
-            <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {mediaItems.map((it, i) => (
-                <li key={it.path} className="relative overflow-hidden rounded border bg-neutral-100">
-                  <div className="aspect-square w-full">
-                    {it.isHeic && !it.previewUrl ? (
-                      <div className="flex h-full items-center justify-center p-1 text-center text-2xs text-neutral-500">
-                        {it.previewFailed ? 'HEIC preview unavailable' : 'Converting HEIC…'}
-                      </div>
-                    ) : (
-                      <img src={it.previewUrl ?? it.url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
-                    )}
-                  </div>
-                  <button type="button" onClick={() => removeMediaItem(i)} className="absolute right-1 top-1 rounded bg-black/50 p-1 text-white">✕</button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Schedule</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm">Scheduled at
-              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} required className="mt-1 w-full rounded border p-2" />
-            </label>
-            <label className="text-sm">Jitter (± minutes)
-              <input type="number" min={0} max={120} value={jitterMinutes} onChange={(e) => setJitterMinutes(Number(e.target.value))} className="mt-1 w-full rounded border p-2" />
-            </label>
+        {/* Location */}
+        <Surface>
+          <SectionHeader eyebrow={t('form.step02')} title={t('listing.section.location')} />
+          <div className="space-y-2 pt-3">
+            <Field helper={t('listing.field.location.hint')}>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder={t('listing.field.location.placeholder')}
+                required
+              />
+            </Field>
           </div>
-        </section>
+        </Surface>
+
+        {/* Description */}
+        <Surface>
+          <SectionHeader eyebrow={t('form.step03')} title={t('listing.section.description')} />
+          <div className="pt-3">
+            <Field>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={7}
+                required
+                placeholder={t('listing.field.description.placeholder')}
+              />
+            </Field>
+          </div>
+        </Surface>
+
+        {/* Photos */}
+        <Surface>
+          <SectionHeader
+            eyebrow={t('form.step04.eyebrow').split(' · ')[0]}
+            title={t('listing.section.photos')}
+            actions={
+              <span className="small-caps">
+                <span className="editorial-num text-base tnum">{mediaItems.length}</span>
+                {' / '}
+                <span className="tnum">{MAX_PHOTOS_PER_LISTING}</span>
+              </span>
+            }
+          />
+          <div className="space-y-4 pt-3">
+            <label
+              className={cn(
+                'flex min-h-[112px] cursor-pointer flex-col items-center justify-center gap-2',
+                'rounded-md border border-dashed border-line-strong bg-surface px-4 py-5 text-center',
+                'transition-colors hover:border-[var(--accent)] hover:bg-accent-soft/50',
+              )}
+            >
+              <input
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) uploadFiles(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden className="text-ink-muted">
+                <path
+                  d="M11 14V4M7 8l4-4 4 4M3 18h16"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-sm text-ink-muted">{t('listing.upload.cta')}</span>
+              <span className="text-2xs text-ink-faint">{t('listing.upload.hint')}</span>
+            </label>
+
+            {mediaItems.length > 0 && (
+              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {mediaItems.map((it, i) => (
+                  <li
+                    key={it.path}
+                    className="relative overflow-hidden rounded-md border border-line bg-surface"
+                  >
+                    <div className="aspect-square w-full">
+                      {it.isHeic && !it.previewUrl ? (
+                        <div className="flex h-full items-center justify-center p-2 text-center text-2xs text-ink-faint">
+                          {it.previewFailed
+                            ? t('listing.heic.failed')
+                            : t('listing.heic.converting')}
+                        </div>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={it.previewUrl ?? it.url}
+                          alt={it.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeMediaItem(i)}
+                      className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink/70 text-[var(--accent-ink)] transition hover:bg-[var(--danger)]"
+                      aria-label="Remove"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path
+                          d="M2.5 2.5l5 5M7.5 2.5l-5 5"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Surface>
+
+        {/* Schedule */}
+        <Surface>
+          <SectionHeader eyebrow="Step 05" title={t('listing.section.schedule')} />
+          <div className="grid grid-cols-1 gap-4 pt-3 sm:grid-cols-2">
+            <Field label={t('listing.field.scheduledAt')} required>
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                required
+              />
+            </Field>
+          </div>
+        </Surface>
       </div>
 
-      <aside className="space-y-4">
-        <section className="rounded border p-4">
-          <h3 className="mb-3 font-semibold">Target groups ({selectedGroupIds.length} selected)</h3>
-          <div className="mb-2 flex gap-2">
-            <button type="button" onClick={() => setSelectedGroupIds(listingGroups.map((g) => g.id))} className="text-xs text-blue-700 underline">Select all</button>
-            <button type="button" onClick={() => setSelectedGroupIds([])} className="text-xs text-neutral-600 underline">Clear</button>
+      {/* ------------- Sidebar ------------- */}
+      <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+        <Surface padded={false}>
+          <div className="flex items-center justify-between p-5 pb-4">
+            <div className="flex flex-col">
+              <span className="small-caps">{t('listing.section.targets')}</span>
+              <span className="mt-1 font-display text-lg tracking-editorial">
+                {t('listing.section.targets.count', { n: selectedGroupIds.length })}
+              </span>
+            </div>
+            <span
+              className={cn(
+                'editorial-num text-2xl leading-none tnum',
+                selectedGroupIds.length > 0 ? 'text-[var(--accent)]' : 'text-ink-faint',
+              )}
+            >
+              {selectedGroupIds.length}
+            </span>
           </div>
-          <div className="max-h-60 overflow-auto rounded border p-2 text-sm">
-            {listingGroups.map((g) => (
-              <label key={g.id} className="flex items-center gap-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={selectedGroupIds.includes(g.id)}
-                  onChange={(e) => setSelectedGroupIds((prev) => e.target.checked ? [...prev, g.id] : prev.filter((id) => id !== g.id))}
-                />
-                <span className="truncate">{g.name ?? g.fbGroupId}</span>
-              </label>
-            ))}
+
+          <div className="flex gap-2 px-5 pb-3">
+            <Button type="button" variant="ghost" size="sm" onClick={selectAll}>
+              {t('listing.selectAll')}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={clearAll}>
+              {t('listing.clear')}
+            </Button>
           </div>
-        </section>
+
+          <Divider />
+
+          <div className="max-h-[360px] overflow-y-auto">
+            <ul className="py-2">
+              {listingGroups.map((g) => {
+                const isChecked = selectedGroupIds.includes(g.id);
+                return (
+                  <li key={g.id}>
+                    <label
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3 px-5 py-2.5 transition-colors',
+                        isChecked ? 'bg-accent-soft/40' : 'hover:bg-surface',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) =>
+                          setSelectedGroupIds((prev) =>
+                            e.target.checked ? [...prev, g.id] : prev.filter((id) => id !== g.id),
+                          )
+                        }
+                      />
+                      <span className="truncate text-sm text-ink">{g.name ?? g.fbGroupId}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </Surface>
 
         <BatchPreview
           selectedCount={selectedGroupIds.length}
@@ -269,12 +538,12 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
           baseAt={baseAt}
           minDelayMinutes={minDelayMinutes}
           maxDelayMinutes={maxDelayMinutes}
+          locale={loc}
         />
 
-        <button type="submit" disabled={create.isPending} className="w-full rounded bg-green-600 px-4 py-2 text-white">
-          {create.isPending ? 'Scheduling…' : 'Schedule listing'}
-        </button>
-        {create.error && <p className="text-sm text-red-600">{create.error.message}</p>}
+        <Button type="submit" size="lg" disabled={create.isPending} className="w-full">
+          {create.isPending ? t('listing.submitting') : t('listing.submit')}
+        </Button>
       </aside>
     </form>
   );
