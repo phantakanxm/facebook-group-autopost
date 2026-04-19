@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Mock FB Listing Form</title></head>
+<body>
+  <div role="dialog" aria-label="Property for sale or rent">
+    <h2>Property for sale or rent</h2>
+
+    <label>Photos
+      <input type="file" id="photo-input" accept="image/*,image/heic,image/heif" multiple />
+    </label>
+    <div id="photo-feedback" data-testid="photo-feedback"></div>
+
+    <label>Property for sale or rent
+      <select id="kind" aria-label="Property for sale or rent">
+        <option value="">--</option>
+        <option value="sale">Sale</option>
+        <option value="rent">Rent</option>
+      </select>
+    </label>
+
+    <label>Property type
+      <select id="ptype" aria-label="Property type">
+        <option value="">--</option>
+        <option value="flat">Flat</option>
+        <option value="house">House</option>
+        <option value="townhouse">Townhouse</option>
+      </select>
+    </label>
+
+    <label>Number of bedrooms
+      <input type="text" id="beds" aria-label="Number of bedrooms" />
+    </label>
+
+    <label>Number of bathrooms
+      <input type="text" id="baths" aria-label="Number of bathrooms" />
+    </label>
+
+    <label>Price
+      <input type="text" id="price" aria-label="Price" />
+    </label>
+
+    <label>Square metres
+      <input type="text" id="sqm" aria-label="Square metres" />
+    </label>
+
+    <label>Location
+      <input type="text" id="location" aria-label="Location" role="combobox" autocomplete="off" />
+    </label>
+    <ul id="location-suggestions" role="listbox" style="display:none;">
+      <li role="option" id="suggestion-0">(no input)</li>
+    </ul>
+
+    <label>Property description
+      <textarea id="description" aria-label="Property description" rows="4"></textarea>
+    </label>
+
+    <button id="next-btn" aria-label="Next">Next</button>
+    <button id="publish-btn" aria-label="Publish" style="display:none;">Publish</button>
+    <div id="published" data-testid="published"></div>
+  </div>
+
+  <script>
+    const loc = document.getElementById('location');
+    const suggestionsEl = document.getElementById('location-suggestions');
+    const firstOpt = document.getElementById('suggestion-0');
+    loc.addEventListener('input', () => {
+      if (loc.value.trim().length >= 2) {
+        firstOpt.textContent = loc.value + ' (top suggestion)';
+        suggestionsEl.style.display = 'block';
+      } else {
+        suggestionsEl.style.display = 'none';
+      }
+    });
+    firstOpt.addEventListener('click', () => {
+      loc.value = firstOpt.textContent;
+      suggestionsEl.style.display = 'none';
+      loc.dataset.selected = 'true';
+    });
+
+    const nextBtn = document.getElementById('next-btn');
+    const pubBtn = document.getElementById('publish-btn');
+    nextBtn.addEventListener('click', () => {
+      nextBtn.style.display = 'none';
+      pubBtn.style.display = 'inline-block';
+    });
+    pubBtn.addEventListener('click', () => {
+      document.getElementById('published').textContent = 'Listing published';
+    });
+
+    document.getElementById('photo-input').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      document.getElementById('photo-feedback').textContent = `${files.length} photo(s) selected`;
+    });
+  </script>
+</body>
+</html>
