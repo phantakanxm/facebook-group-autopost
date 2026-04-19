@@ -27,7 +27,14 @@ function isHeicFile(name: string, type: string): boolean {
   return ext === 'heic' || ext === 'heif' || type === 'image/heic' || type === 'image/heif';
 }
 
-export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
+export function ListingForm({
+  cloneFromId,
+  onSaved,
+}: {
+  /** When set, fetches the source campaign and pre-fills the form (except scheduledAt). */
+  cloneFromId?: string;
+  onSaved?: (id: string) => void;
+}) {
   const t = useT();
   const { locale } = useLocale();
   const loc = locale === 'th' ? 'th-TH' : 'en-GB';
@@ -51,6 +58,44 @@ export function ListingForm({ onSaved }: { onSaved?: (id: string) => void }) {
   const settings = trpc.setting.get.useQuery();
   const scan = trpc.group.requestCapabilityScan.useMutation();
   const create = trpc.campaign.createListing.useMutation();
+  const cloneSource = trpc.campaign.get.useQuery(
+    { id: cloneFromId ?? '' },
+    { enabled: !!cloneFromId },
+  );
+
+  // Pre-fill from an existing listing (Duplicate flow)
+  const [clonePrefilled, setClonePrefilled] = useState(false);
+  useEffect(() => {
+    if (!cloneFromId || clonePrefilled || !cloneSource.data) return;
+    const src = cloneSource.data;
+    if (src.listingKind) setListingKind(src.listingKind as ListingKind);
+    if (src.propertyType) setPropertyType(src.propertyType as PropertyType);
+    if (typeof src.bedrooms === 'number') setBedrooms(src.bedrooms);
+    if (typeof src.bathrooms === 'number') setBathrooms(src.bathrooms);
+    if (typeof src.priceBaht === 'number') setPriceBaht(src.priceBaht);
+    if (typeof src.squareMetres === 'number') setSquareMetres(src.squareMetres);
+    if (src.location) setLocation(src.location);
+    setContent(src.content);
+    const paths: string[] = (() => {
+      try { return JSON.parse(src.mediaFiles) as string[]; } catch { return []; }
+    })();
+    const items: MediaItem[] = paths.map((p) => {
+      const parts = p.split('/uploads/');
+      const rel = parts.length > 1 ? parts[1]! : p.split('/').slice(-2).join('/');
+      const name = rel.split('/').pop() ?? 'file';
+      return {
+        path: p,
+        url: `/api/media/${rel.split('/').map(encodeURIComponent).join('/')}`,
+        name,
+        size: 0,
+        type: '',
+        isHeic: isHeicFile(name, ''),
+      };
+    });
+    setMediaItems(items);
+    setSelectedGroupIds(src.groups.map((cg) => cg.groupId));
+    setClonePrefilled(true);
+  }, [cloneFromId, cloneSource.data, clonePrefilled]);
 
   const confirm = useConfirm();
   const toast = useToast();

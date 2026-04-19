@@ -1,9 +1,11 @@
 'use client';
 import { trpc } from '@/lib/trpc-client';
+import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
 export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const c = trpc.campaign.get.useQuery({ id });
   const resume = trpc.campaign.resume.useMutation({ onSuccess: () => c.refetch() });
   const cancel = trpc.campaign.cancel.useMutation({ onSuccess: () => c.refetch() });
@@ -51,6 +53,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             {d.status === 'running' ? 'Cancel running' : 'Cancel'}
           </button>
         )}
+        <button
+          onClick={() => router.push(`/campaigns/new/${isListing ? 'listing' : 'post'}?from=${id}`)}
+          className="rounded bg-blue-600 px-4 py-2 text-white"
+        >
+          Duplicate
+        </button>
       </div>
 
       {isListing && (
