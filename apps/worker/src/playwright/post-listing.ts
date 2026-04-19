@@ -73,11 +73,27 @@ export async function postListingBatch(
     await humanClick(page, listingBtn);
     await humanDelay(1_000, 2_000);
 
-    // 3. Pick "Property for sale or rent" category
-    const categoryBtn = await firstMatch(page, SELECTORS.listingCategoryPropertyForSaleOrRent);
-    if (!categoryBtn) return await fail('selector_not_found', 'Property category missing');
-    await humanClick(page, categoryBtn);
-    await humanDelay(1_500, 2_500);
+    // 3. Wait for dialog content to render (skeleton → real UI) and branch:
+    //    • Some groups show a category chooser — click "Property for sale or rent"
+    //    • Property-specific groups open the form directly — skip category step
+    let categoryBtn: string | null = null;
+    let kindComboEarly: string | null = null;
+    const dialogDeadline = Date.now() + 15_000;
+    while (Date.now() < dialogDeadline) {
+      categoryBtn = await firstMatch(page, SELECTORS.listingCategoryPropertyForSaleOrRent);
+      if (categoryBtn) break;
+      kindComboEarly = await firstMatch(page, SELECTORS.listingKindCombobox);
+      if (kindComboEarly) break;
+      await sleep(500);
+    }
+    if (categoryBtn) {
+      await humanClick(page, categoryBtn);
+      await humanDelay(1_500, 2_500);
+    } else if (kindComboEarly) {
+      log.info('listing form opened directly — skipping category chooser');
+    } else {
+      return await fail('selector_not_found', 'Category chooser or listing form did not render within 15s');
+    }
 
     // 4. Upload photos first
     const photoInputSelectors = [
