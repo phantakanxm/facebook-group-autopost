@@ -1,6 +1,6 @@
-// apps/worker/src/scheduler.ts
 import type { PrismaClient } from '@prisma/client';
 import { runCampaign, type PlaywrightAdapter } from './campaigns/runner.js';
+import { runListingBatch } from './campaigns/listing-runner.js';
 import { logger } from './logger.js';
 import { handleSessionRequests } from './session/requests.js';
 
@@ -11,29 +11,58 @@ export interface PollOpts {
 }
 
 /**
- * Find the earliest due campaign and run it. Returns the campaign id that ran,
+ * Find the earliest due work (regular post campaign OR listing batch) and run it.
+ * Returns a tag string describing what ran ('post:<id>' or 'listing:<batchId>'),
  * or null if nothing was due.
  */
 export async function pollAndRunOnce(opts: PollOpts): Promise<string | null> {
   const now = new Date();
-  const due = await opts.prisma.campaign.findFirst({
-    where: { status: 'scheduled', scheduledAt: { lte: now } },
-    orderBy: { scheduledAt: 'asc' },
-    select: { id: true },
-  });
-  if (!due) return null;
 
-  logger.info({ campaignId: due.id }, 'picked up due campaign');
-  const runInput: Parameters<typeof runCampaign>[0] = {
-    campaignId: due.id,
-    prisma: opts.prisma,
-    adapter: opts.adapter,
-  };
-  if (opts.fastMode !== undefined) {
-    runInput.fastMode = opts.fastMode;
+  const duePost = await opts.prisma.campaign.findFirst({
+    where: { status: 'scheduled', scheduledAt: { lte: now }, type: 'post' },
+    orderBy: { scheduledAt: 'asc' },
+    select: { id: true, scheduledAt: true },
+  });
+
+  const dueBatch = await opts.prisma.listingBatch.findFirst({
+    where: {
+      status: 'scheduled',
+      scheduledAt: { lte: now },
+      campaign: { type: 'listing', status: { notIn: ['paused', 'completed', 'failed'] } },
+    },
+    orderBy: { scheduledAt: 'asc' },
+    select: { id: true, scheduledAt: true },
+  });
+
+  // Pick whichever is earliest; tie-break to post.
+  let chosen: { kind: 'post' | 'listing'; id: string } | null = null;
+  if (duePost && dueBatch) {
+    chosen = duePost.scheduledAt <= dueBatch.scheduledAt
+      ? { kind: 'post', id: duePost.id }
+      : { kind: 'listing', id: dueBatch.id };
+  } else if (duePost) {
+    chosen = { kind: 'post', id: duePost.id };
+  } else if (dueBatch) {
+    chosen = { kind: 'listing', id: dueBatch.id };
   }
-  await runCampaign(runInput);
-  return due.id;
+
+  if (!chosen) return null;
+
+  if (chosen.kind === 'post') {
+    logger.info({ campaignId: chosen.id }, 'picked up due campaign (post)');
+    const runOpts = opts.fastMode !== undefined
+      ? { campaignId: chosen.id, prisma: opts.prisma, adapter: opts.adapter, fastMode: opts.fastMode }
+      : { campaignId: chosen.id, prisma: opts.prisma, adapter: opts.adapter };
+    await runCampaign(runOpts);
+    return `post:${chosen.id}`;
+  }
+
+  logger.info({ batchId: chosen.id }, 'picked up due listing batch');
+  const runOpts = opts.fastMode !== undefined
+    ? { batchId: chosen.id, prisma: opts.prisma, adapter: opts.adapter, fastMode: opts.fastMode }
+    : { batchId: chosen.id, prisma: opts.prisma, adapter: opts.adapter };
+  await runListingBatch(runOpts);
+  return `listing:${chosen.id}`;
 }
 
 /**
@@ -49,6 +78,7 @@ export function startScheduler(opts: PollOpts & { intervalMs?: number }): () => 
     if (stopped || running) return;
     running = true;
     try {
+      // Session setup/verify/auto-sync/capability-scan flags — existing behavior
       await handleSessionRequests('default-user');
       await pollAndRunOnce(opts);
     } catch (err) {
@@ -59,7 +89,6 @@ export function startScheduler(opts: PollOpts & { intervalMs?: number }): () => 
   };
 
   const handle = setInterval(tick, interval);
-  // Kick off immediately once
   void tick();
 
   return () => {

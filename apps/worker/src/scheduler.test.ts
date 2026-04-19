@@ -45,7 +45,7 @@ describe('pollAndRunOnce', () => {
 
     const a = adapter();
     const ran = await pollAndRunOnce({ prisma, adapter: a, fastMode: true });
-    expect(ran).toBe(c1.id);
+    expect(ran).toBe(`post:${c1.id}`);
 
     const updated = await prisma.campaign.findUniqueOrThrow({ where: { id: c1.id } });
     expect(updated.status).toBe('completed');
@@ -75,5 +75,61 @@ describe('pollAndRunOnce', () => {
     });
     const ran = await pollAndRunOnce({ prisma, adapter: adapter(), fastMode: true });
     expect(ran).toBeNull();
+  });
+});
+
+describe('pollAndRunOnce — listing batches', () => {
+  let db: TestDb;
+  let prisma: PrismaClient;
+
+  beforeEach(async () => { db = await setupTestDb(); prisma = db.prisma; });
+  afterEach(async () => { await db.cleanup(); });
+
+  it('picks due listing batch and runs it', async () => {
+    const { user, groups } = await seedBasic(prisma, { groups: 3 });
+    const campaign = await prisma.campaign.create({
+      data: {
+        userId: user.id,
+        content: 'hi',
+        scheduledAt: new Date(Date.now() - 60_000),
+        status: 'running',
+        type: 'listing',
+        listingKind: 'sale',
+        propertyType: 'house',
+        bedrooms: 2,
+        bathrooms: 1,
+        priceBaht: 1_000_000,
+        location: 'UD',
+        mediaFiles: JSON.stringify(['/tmp/a.jpg']),
+        mediaType: 'images',
+      },
+    });
+    const batch = await prisma.listingBatch.create({
+      data: {
+        campaignId: campaign.id,
+        order: 0,
+        scheduledAt: new Date(Date.now() - 60_000),
+        status: 'scheduled',
+      },
+    });
+    await prisma.listingBatchGroup.create({
+      data: { batchId: batch.id, groupId: groups[0]!.id, isPrimary: true, order: 0 },
+    });
+
+    const postListingBatch = vi.fn().mockResolvedValue({ success: true, fbPostUrl: 'https://fb/l/1' });
+    const a = {
+      verifySession: vi.fn().mockResolvedValue({ valid: true }),
+      openCampaign: vi.fn().mockResolvedValue({
+        postToGroup: vi.fn(),
+        postListingBatch,
+        close: vi.fn().mockResolvedValue(undefined),
+      }),
+    };
+
+    const ran = await pollAndRunOnce({ prisma, adapter: a, fastMode: true });
+    expect(ran).toBe(`listing:${batch.id}`);
+
+    const updated = await prisma.listingBatch.findUniqueOrThrow({ where: { id: batch.id } });
+    expect(updated.status).toBe('completed');
   });
 });
