@@ -1,6 +1,7 @@
 import { prisma } from '@app/db';
 import { openSessionSetup, verifySession } from '../playwright/session.js';
 import { autoSyncGroups } from '../groups/sync.js';
+import { scanGroupCapabilities } from '../groups/scan.js';
 import { logger } from '../logger.js';
 
 export async function handleSessionRequests(userId: string): Promise<void> {
@@ -20,6 +21,11 @@ export async function handleSessionRequests(userId: string): Promise<void> {
   } else if (user.sessionPath === 'pending-group-sync') {
     await prisma.user.update({ where: { id: userId }, data: { sessionPath: 'syncing' } });
     await autoSyncGroups(userId, prisma);
+    await prisma.user.update({ where: { id: userId }, data: { sessionPath: null } });
+  } else if (user.sessionPath === 'pending-capability-scan') {
+    logger.info({ userId }, 'capability scan requested');
+    await prisma.user.update({ where: { id: userId }, data: { sessionPath: 'scanning-capabilities' } });
+    await scanGroupCapabilities(userId, prisma);
     await prisma.user.update({ where: { id: userId }, data: { sessionPath: null } });
   }
 }

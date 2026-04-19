@@ -31,6 +31,9 @@ model Group {
   lastPosted DateTime?
   createdAt  DateTime  @default(now())
 
+  supportsListing   Boolean   @default(false)
+  listingScannedAt  DateTime?
+
   user      User            @relation(fields: [userId], references: [id])
   postLogs  PostLog[]
   campaigns CampaignGroup[]
