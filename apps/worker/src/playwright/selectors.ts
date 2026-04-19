@@ -107,7 +107,7 @@ export const SELECTORS = {
     'role=button[name=/^\\s*(Next|ถัดไป)\\s*$/i]',
   ],
   listingPublishButton: [
-    'role=button[name=/^\\s*(Publish|โพสต์|ลงประกาศ)\\s*$/i]',
+    'role=button[name=/^\\s*(Publish|Post|Post listing|Post it|Create listing|Share|โพสต์|ลงประกาศ|เผยแพร่|แชร์)\\s*$/i]',
   ],
   listingPublishedBanner: 'text=/โพสต์แล้ว|Listing published|Posted successfully|Posted to/i',
   // Share groups panel (step 2 after Next)

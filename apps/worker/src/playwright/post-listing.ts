@@ -167,12 +167,19 @@ export async function postListingBatch(
     await page.keyboard.insertText(input.description);
     await humanDelay(500, 1_500);
 
-    // 9. Click Next
+    // 9. Click Next — then poll for page 2 to load (share groups or Publish button)
     await humanScroll(page);
     const nextBtn = await firstMatch(page, SELECTORS.listingNextButton);
     if (!nextBtn) return await fail('selector_not_found', 'Next button missing');
     await humanClick(page, nextBtn);
-    await humanDelay(2_000, 4_000);
+    // Poll up to 15s for page-2 indicators to appear
+    const page2Deadline = Date.now() + 15_000;
+    while (Date.now() < page2Deadline) {
+      if (await firstMatch(page, SELECTORS.listingPublishButton)) break;
+      if (await firstMatch(page, SELECTORS.shareGroupSearch)) break;
+      await sleep(500);
+    }
+    await humanDelay(500, 1_500);
 
     // 10. Select share groups
     if (input.shareGroupNames.length > 0) {
@@ -197,8 +204,16 @@ export async function postListingBatch(
       }
     }
 
-    // 11. Click Publish
-    const pubBtn = await firstMatch(page, SELECTORS.listingPublishButton);
+    // 11. Click Publish — poll once more in case share-group selection takes time to settle
+    let pubBtn: string | null = await firstMatch(page, SELECTORS.listingPublishButton);
+    if (!pubBtn) {
+      const publishDeadline = Date.now() + 10_000;
+      while (Date.now() < publishDeadline) {
+        pubBtn = await firstMatch(page, SELECTORS.listingPublishButton);
+        if (pubBtn) break;
+        await sleep(500);
+      }
+    }
     if (!pubBtn) return await fail('selector_not_found', 'Publish button missing');
     await humanClick(page, pubBtn);
     await sleep(6_000);
