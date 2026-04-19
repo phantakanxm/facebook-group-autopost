@@ -50,10 +50,10 @@ export const SELECTORS = {
     'role=button[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
   ],
   listingKindOptionSale: [
-    'role=option[name=/^\\s*(Sale|ขาย)\\s*$/i]',
+    'role=option[name=/^\\s*(For sale|Sale|ขาย|สำหรับขาย)\\s*$/i]',
   ],
   listingKindOptionRent: [
-    'role=option[name=/^\\s*(Rent|ให้เช่า)\\s*$/i]',
+    'role=option[name=/^\\s*(For rent|Rent|ให้เช่า|สำหรับเช่า)\\s*$/i]',
   ],
   propertyTypeCombobox: [
     'role=combobox[name=/Property type|ประเภทอสังหา/i]',
