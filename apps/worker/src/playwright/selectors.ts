@@ -39,6 +39,68 @@ export const SELECTORS = {
     'role=button[name=/ประกาศขาย|Sell Something|Sell something|List for Sale|List something for sale/i]',
     'role=link[name=/ประกาศขาย|Sell Something|Sell something|List for Sale/i]',
   ],
+  // Listing form modal — category chooser
+  listingCategoryPropertyForSaleOrRent: [
+    'role=button[name=/ขาย.?\\/?.?เช่า.?อสังหา|Property for sale or rent/i]',
+    'role=link[name=/ขาย.?\\/?.?เช่า.?อสังหา|Property for sale or rent/i]',
+  ],
+  // Comboboxes (click to open, then pick role=option)
+  listingKindCombobox: [
+    'role=combobox[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
+    'role=button[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
+  ],
+  listingKindOptionSale: [
+    'role=option[name=/^\\s*(Sale|ขาย)\\s*$/i]',
+  ],
+  listingKindOptionRent: [
+    'role=option[name=/^\\s*(Rent|ให้เช่า)\\s*$/i]',
+  ],
+  propertyTypeCombobox: [
+    'role=combobox[name=/Property type|ประเภทอสังหา/i]',
+    'role=button[name=/Property type|ประเภทอสังหา/i]',
+  ],
+  // Numeric & text inputs (role=textbox / role=spinbutton)
+  listingBedroomsInput: [
+    'role=spinbutton[name=/Number of bedrooms|จำนวนห้องนอน/i]',
+    'role=textbox[name=/Number of bedrooms|จำนวนห้องนอน/i]',
+  ],
+  listingBathroomsInput: [
+    'role=spinbutton[name=/Number of bathrooms|จำนวนห้องน้ำ/i]',
+    'role=textbox[name=/Number of bathrooms|จำนวนห้องน้ำ/i]',
+  ],
+  listingPriceInput: [
+    'role=spinbutton[name=/^\\s*(Price|ราคา)\\s*$/i]',
+    'role=textbox[name=/^\\s*(Price|ราคา)\\s*$/i]',
+  ],
+  listingSqmInput: [
+    'role=spinbutton[name=/Square metres|Square meters|ตารางเมตร|ขนาด.*ตรม/i]',
+    'role=textbox[name=/Square metres|Square meters|ตารางเมตร|ขนาด.*ตรม/i]',
+  ],
+  // Location combobox + its suggestion listbox
+  listingLocationCombobox: [
+    'role=combobox[name=/^\\s*(Location|ตำแหน่ง|ที่อยู่)\\s*$/i]',
+    '[role="dialog"] input[placeholder*="Location" i]',
+    '[role="dialog"] input[placeholder*="ตำแหน่ง"]',
+  ],
+  listingLocationFirstOption: '[role="listbox"] >> role=option >> nth=0',
+  // Description textbox
+  listingDescriptionTextbox: [
+    'role=textbox[name=/Property description|รายละเอียด|Description/i]',
+    '[role="dialog"] textarea',
+  ],
+  // Step navigation + submit
+  listingNextButton: [
+    'role=button[name=/^\\s*(Next|ถัดไป)\\s*$/i]',
+  ],
+  listingPublishButton: [
+    'role=button[name=/^\\s*(Publish|โพสต์|ลงประกาศ)\\s*$/i]',
+  ],
+  listingPublishedBanner: 'text=/โพสต์แล้ว|Listing published|Posted successfully|Posted to/i',
+  // Share groups panel (step 2 after Next)
+  shareGroupSearch: [
+    'role=searchbox[name=/Search groups|ค้นหากลุ่ม/i]',
+    '[role="dialog"] input[type="search"]',
+  ],
   // Success signals
   composerClosed: '[contenteditable="true"][role="textbox"]',
   // Pending approval banner after submit
@@ -61,4 +123,26 @@ export async function firstMatch(
     if ((await page.locator(s).count()) > 0) return s;
   }
   return null;
+}
+
+/**
+ * Selector for a share-group checkbox row matching a literal group name.
+ * FB wraps the row as role=checkbox with the group name as the accessible name.
+ */
+export function shareGroupCheckboxByName(name: string): string {
+  // Escape regex metachars so the name is treated literally.
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return `role=checkbox[name=/${escaped}/i]`;
+}
+
+/**
+ * Selector for a property-type option (Flat/House/Townhouse).
+ */
+export function propertyTypeOption(type: 'flat' | 'house' | 'townhouse'): string {
+  const map = {
+    flat: /^\s*(Flat|แฟลต|อพาร์ต|Apartment)\s*$/.source,
+    house: /^\s*(House|บ้าน(เดี่ยว)?)\s*$/.source,
+    townhouse: /^\s*(Townhouse|Town.?house|ทาวน์เฮาส์|ทาวน์โฮม)\s*$/.source,
+  };
+  return `role=option[name=/${map[type]}/i]`;
 }
