@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { PostResult } from '@app/shared';
 import { humanDelay } from '../utils/delays.js';
+import { cleanGroupName } from '../groups/groupName.js';
 import { logger } from '../logger.js';
 
 export interface CampaignContext {
@@ -119,7 +120,9 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
 
     result = await ctx.postListingBatch({
       primaryGroupFbUrl: primary.group.fbUrl,
-      shareGroupNames: shares.map((s) => s.group.name ?? s.group.fbGroupId),
+      // Strip FB's dynamic activity suffix (e.g. "Last active X ago") from stored
+      // names — the checkbox on the share-groups panel uses the bare title.
+      shareGroupNames: shares.map((s) => cleanGroupName(s.group.name ?? s.group.fbGroupId) || s.group.fbGroupId),
       listingKind: campaign.listingKind as 'sale' | 'rent',
       propertyType: campaign.propertyType as 'flat' | 'house' | 'townhouse',
       bedrooms: campaign.bedrooms!,
