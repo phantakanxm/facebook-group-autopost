@@ -159,12 +159,23 @@ export async function postListingBatch(
     if (!resolved) return await fail('transient', 'location_not_resolved');
     await humanDelay(300, 700);
 
-    // 8. Description
+    // 8. Description — line-by-line to preserve newlines (Lexical swallows \n in insertText)
     const descSel = await firstMatch(page, SELECTORS.listingDescriptionTextbox);
     if (!descSel) return await fail('selector_not_found', 'description textbox missing');
     await page.locator(descSel).first().click();
     await humanDelay(250, 500);
-    await page.keyboard.insertText(input.description);
+    {
+      const descLines = input.description.split('\n');
+      for (let i = 0; i < descLines.length; i++) {
+        const line = descLines[i]!;
+        if (line.length > 0) {
+          await page.keyboard.insertText(line);
+        }
+        if (i < descLines.length - 1) {
+          await page.keyboard.press('Enter');
+        }
+      }
+    }
     await humanDelay(500, 1_500);
 
     // 9. Click Next — then poll for page 2 to load (share groups or Publish button)
@@ -181,24 +192,41 @@ export async function postListingBatch(
     }
     await humanDelay(500, 1_500);
 
-    // 10. Select share groups
+    // 10. Select share groups — try each selector candidate for each group name
     if (input.shareGroupNames.length > 0) {
       const search = await firstMatch(page, SELECTORS.shareGroupSearch);
       for (const name of input.shareGroupNames) {
+        let clicked = false;
         try {
           if (search) {
             await page.locator(search).first().click();
             await page.locator(search).first().fill('');
             await humanDelay(150, 300);
             await page.keyboard.insertText(name);
-            await sleep(800);
+            await sleep(1_000);
           }
-          const checkbox = page.locator(shareGroupCheckboxByName(name)).first();
-          await checkbox.waitFor({ state: 'visible', timeout: 4_000 });
-          await checkbox.click();
+          const candidateSelectors = shareGroupCheckboxByName(name);
+          for (const sel of candidateSelectors) {
+            const loc = page.locator(sel).first();
+            if ((await loc.count()) === 0) continue;
+            try {
+              await loc.waitFor({ state: 'visible', timeout: 2_500 });
+              await loc.click();
+              clicked = true;
+              log.info({ name, selector: sel }, 'share group clicked');
+              break;
+            } catch {
+              // selector matched but couldn't click — try next candidate
+            }
+          }
+          if (!clicked) {
+            log.warn({ name, tried: candidateSelectors.length }, 'share group not found in list, skipping');
+            missingShareGroups.push(name);
+          }
           await humanDelay(400, 800);
-        } catch {
-          log.warn({ name }, 'share group not found in list, skipping');
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          log.warn({ name, err: msg }, 'share group error, skipping');
           missingShareGroups.push(name);
         }
       }

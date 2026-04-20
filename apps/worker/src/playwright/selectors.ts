@@ -140,13 +140,23 @@ export async function firstMatch(
 }
 
 /**
- * Selector for a share-group checkbox row matching a literal group name.
- * FB wraps the row as role=checkbox with the group name as the accessible name.
+ * Selector candidates for a share-group row that can be clicked to toggle. FB's
+ * multi-group share picker renders rows in several possible shapes, so we try:
+ *   1. role=checkbox with the group name as accessible name
+ *   2. role=menuitemcheckbox / role=option with the group name
+ *   3. A label/text node containing the group name (click toggles the checkbox)
  */
-export function shareGroupCheckboxByName(name: string): string {
-  // Escape regex metachars so the name is treated literally.
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return `role=checkbox[name=/${escaped}/i]`;
+export function shareGroupCheckboxByName(name: string): string[] {
+  const escapedRe = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedCss = name.replace(/"/g, '\\"');
+  return [
+    `role=checkbox[name=/${escapedRe}/i]`,
+    `role=menuitemcheckbox[name=/${escapedRe}/i]`,
+    `role=option[name=/${escapedRe}/i]`,
+    `[role="dialog"] label:has-text("${escapedCss}")`,
+    `[role="dialog"] [role="listitem"]:has-text("${escapedCss}")`,
+    `[role="dialog"] div:has(> input[type="checkbox"]):has-text("${escapedCss}")`,
+  ];
 }
 
 /**

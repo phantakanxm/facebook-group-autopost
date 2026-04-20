@@ -27,19 +27,25 @@ export async function humanClick(page: Page, selector: string): Promise<void> {
 }
 
 export async function humanPaste(page: Page, editorSelector: string, text: string): Promise<void> {
-  await page.locator(editorSelector).first().focus();
+  // Click to focus — FB's composer (Lexical editor) needs a real click to activate.
+  // Insert text line-by-line, pressing Enter between lines. `keyboard.insertText`
+  // with embedded `\n` is swallowed by Lexical's paste handler; explicit Enter
+  // presses generate a `beforeinput` event with `inputType: 'insertParagraph'` or
+  // `'insertLineBreak'` which the editor honors.
+  const el = page.locator(editorSelector).first();
+  await el.click();
   await humanDelay(300, 800);
-  // Use page.evaluate to synthesize a paste event reliably (clipboard API blocked in some headless).
-  await page.evaluate(
-    ({ sel, text }) => {
-      const el = document.querySelector(sel) as HTMLElement | null;
-      if (!el) throw new Error('paste target missing');
-      const dt = new DataTransfer();
-      dt.setData('text/plain', text);
-      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
-    },
-    { sel: editorSelector, text },
-  );
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.length > 0) {
+      await page.keyboard.insertText(line);
+    }
+    if (i < lines.length - 1) {
+      await page.keyboard.press('Enter');
+    }
+  }
+  await humanDelay(300, 600);
 }
 
 export async function humanScroll(page: Page): Promise<void> {
