@@ -23,6 +23,19 @@ const DICT = {
     'common.dash': '—',
     'common.never': 'never',
     'common.none': 'None',
+    'common.processing': 'Processing',
+    'common.pleaseWait': 'Please wait a moment…',
+    'common.working.submit': 'Scheduling your dispatch',
+    'common.working.resume': 'Resuming campaign',
+    'common.working.cancel': 'Cancelling campaign',
+    'common.working.addGroups': 'Adding groups',
+    'common.working.sync': 'Starting browser sync',
+    'common.working.scan': 'Starting capability scan',
+    'common.working.remove': 'Removing group',
+    'common.working.toggle': 'Updating group status',
+    'common.working.saveSettings': 'Saving settings',
+    'common.working.openBrowser': 'Opening browser',
+    'common.working.verify': 'Verifying session',
 
     /* ---------- Brand / shell ---------- */
     'brand.name': 'Atelier',
@@ -120,6 +133,104 @@ const DICT = {
     'camps.empty.desc':
       "Start your first campaign — choose the content, the groups, and when it should leave the press.",
     'camps.empty.cta': 'Compose the first one',
+
+    /* ---------- Campaign type picker ---------- */
+    'picker.eyebrow': 'Create',
+    'picker.title': 'What kind of campaign?',
+    'picker.subtitle': 'Pick the format that fits what you want to send today.',
+    'picker.post.eyebrow': 'Regular post',
+    'picker.post.title': 'Post to many groups',
+    'picker.post.desc':
+      'Send text + media to multiple groups one after another. Best for announcements, promotions, and general content.',
+    'picker.post.cta': 'Choose this',
+    'picker.listing.eyebrow': 'Real estate',
+    'picker.listing.title': 'Property listing',
+    'picker.listing.desc':
+      'Structured listing with native multi-group share (up to 21 groups per batch). Requires groups that support Facebook Marketplace.',
+    'picker.listing.cta': 'Choose this',
+
+    /* ---------- New Post wrapper ---------- */
+    'new.post.eyebrow': 'Regular post',
+    'new.post.title': 'A new dispatch',
+    'new.post.subtitle':
+      'Words, attachments, audience, timing. Set the intent — the press handles the rest.',
+
+    /* ---------- Listing form ---------- */
+    'new.listing.eyebrow': 'Property listing',
+    'new.listing.title': 'New real estate listing',
+    'new.listing.subtitle':
+      'Fill in the details, upload photos, and the system batches the dispatch across marketplace-enabled groups.',
+
+    'listing.noGroups.title': 'No listing-capable groups yet',
+    'listing.noGroups.desc':
+      'Run a capability check to find out which of your groups support Facebook Marketplace listings.',
+    'listing.noGroups.cta': 'Check my groups',
+    'listing.noGroups.pending': 'Requesting…',
+
+    'listing.section.property': 'Property details',
+    'listing.kind.sale': 'For sale',
+    'listing.kind.rent': 'For rent',
+    'listing.field.propertyType': 'Property type',
+    'listing.type.flat': 'Condo / Flat',
+    'listing.type.house': 'House',
+    'listing.type.townhouse': 'Townhouse',
+    'listing.field.bedrooms': 'Bedrooms',
+    'listing.field.bathrooms': 'Bathrooms',
+    'listing.field.price': 'Price',
+    'listing.field.price.suffix': 'THB',
+    'listing.field.sqm': 'Area',
+    'listing.field.sqm.suffix': 'sq.m',
+    'listing.field.sqm.hint': 'Optional',
+
+    'listing.section.location': 'Location',
+    'listing.field.location.placeholder': 'e.g. Urban Property Udon, Udon Thani',
+    'listing.field.location.hint':
+      'The system will type this into Facebook and pick the first autocomplete suggestion.',
+
+    'listing.section.description': 'Description',
+    'listing.field.description.placeholder':
+      'Write the full listing description — amenities, highlights, contact etc.',
+
+    'listing.section.photos': 'Photos',
+    'listing.section.photos.sub': 'Up to {max} photos',
+    'listing.upload.cta': 'Click to upload images',
+    'listing.upload.hint': 'JPEG, PNG, WebP, or HEIC',
+    'listing.heic.converting': 'Converting HEIC…',
+    'listing.heic.failed': 'HEIC preview unavailable',
+
+    'listing.section.schedule': 'Schedule',
+    'listing.field.scheduledAt': 'Dispatch at',
+    'listing.field.jitter': 'Jitter (± minutes)',
+
+    'listing.section.targets': 'Target groups',
+    'listing.section.targets.count': '{n} selected',
+    'listing.selectAll': 'Select all',
+    'listing.clear': 'Clear',
+
+    'listing.submit': 'Schedule listing',
+    'listing.submitting': 'Scheduling…',
+
+    'listing.err.noGroups': 'Please select at least one group',
+    'listing.err.noPhotos': 'Please upload at least one photo',
+    'listing.err.submit': 'Failed to schedule listing',
+
+    'listing.confirm.eyebrow': 'Confirm listing',
+    'listing.confirm.title': 'Schedule this listing now?',
+    'listing.confirm.desc':
+      'The listing will be dispatched to {n} groups across {b} batches.',
+    'listing.confirm.cta': 'Schedule',
+    'listing.toast.ok': 'Listing scheduled',
+    'listing.toast.ok.desc': '{n} groups across {b} batches',
+    'listing.toast.fail': 'Failed to schedule',
+    'listing.toast.uploadFail': 'Upload failed',
+
+    /* ---------- Batch preview ---------- */
+    'batch.empty': 'Select groups and a schedule to preview the batches.',
+    'batch.summary.one': '{n} groups selected → {b} batch',
+    'batch.summary.many': '{n} groups selected → {b} batches',
+    'batch.row.one': 'Batch {i} · {n} group',
+    'batch.row.many': 'Batch {i} · {n} groups',
+    'batch.footer': 'Delay {min}–{max} min between batches. Adjust in Settings.',
 
     /* ---------- Campaign detail ---------- */
     'camp.back': 'All campaigns',
@@ -439,6 +550,19 @@ const DICT = {
     'common.dash': '—',
     'common.never': 'ยังไม่เคย',
     'common.none': 'ไม่มี',
+    'common.processing': 'กำลังประมวลผล',
+    'common.pleaseWait': 'รอสักครู่นะ…',
+    'common.working.submit': 'กำลังตั้งเวลาส่ง',
+    'common.working.resume': 'กำลังปลดพักแคมเปญ',
+    'common.working.cancel': 'กำลังยกเลิกแคมเปญ',
+    'common.working.addGroups': 'กำลังเพิ่มกลุ่ม',
+    'common.working.sync': 'กำลังเปิดเบราว์เซอร์',
+    'common.working.scan': 'กำลังเริ่มเช็คกลุ่ม',
+    'common.working.remove': 'กำลังลบกลุ่ม',
+    'common.working.toggle': 'กำลังเปลี่ยนสถานะกลุ่ม',
+    'common.working.saveSettings': 'กำลังบันทึกการตั้งค่า',
+    'common.working.openBrowser': 'กำลังเปิดเบราว์เซอร์',
+    'common.working.verify': 'กำลังตรวจสอบเซสชัน',
 
     /* ---------- Brand / shell ---------- */
     'brand.name': 'Atelier',
@@ -536,6 +660,104 @@ const DICT = {
     'camps.empty.desc':
       'เริ่มแคมเปญแรกกันเลย — เลือกเนื้อหา กลุ่มปลายทาง และเวลาที่จะส่ง',
     'camps.empty.cta': 'เริ่มแคมเปญแรก',
+
+    /* ---------- Campaign type picker ---------- */
+    'picker.eyebrow': 'สร้างใหม่',
+    'picker.title': 'อยากสร้างแคมเปญแบบไหน?',
+    'picker.subtitle': 'เลือกรูปแบบให้เหมาะกับสิ่งที่อยากโพสต์วันนี้',
+    'picker.post.eyebrow': 'โพสต์ทั่วไป',
+    'picker.post.title': 'โพสต์ข้อความลงหลายกลุ่ม',
+    'picker.post.desc':
+      'ส่งข้อความ + รูป/วิดีโอ ไปหลายกลุ่มทีละกลุ่ม เหมาะกับประกาศ โปรโมชัน หรือคอนเทนต์ทั่วไป',
+    'picker.post.cta': 'เลือกอันนี้',
+    'picker.listing.eyebrow': 'อสังหาริมทรัพย์',
+    'picker.listing.title': 'ประกาศขาย/ให้เช่า',
+    'picker.listing.desc':
+      'ประกาศแบบมีโครงสร้างพร้อมแชร์หลายกลุ่มในครั้งเดียว (สูงสุด 21 กลุ่ม/รอบ) ต้องเป็นกลุ่มที่รองรับ Facebook Marketplace',
+    'picker.listing.cta': 'เลือกอันนี้',
+
+    /* ---------- New Post wrapper ---------- */
+    'new.post.eyebrow': 'โพสต์ทั่วไป',
+    'new.post.title': 'สร้างโพสต์ใหม่',
+    'new.post.subtitle':
+      'ใส่ข้อความ ไฟล์แนบ เลือกกลุ่ม และตั้งเวลา — ที่เหลือให้ระบบจัดการให้',
+
+    /* ---------- Listing form ---------- */
+    'new.listing.eyebrow': 'ประกาศอสังหา',
+    'new.listing.title': 'ลงประกาศอสังหาใหม่',
+    'new.listing.subtitle':
+      'กรอกรายละเอียด อัปโหลดรูป แล้วระบบจะแบ่งรอบส่งเข้ากลุ่มที่รองรับ Marketplace ให้อัตโนมัติ',
+
+    'listing.noGroups.title': 'ยังไม่มีกลุ่มที่ลงประกาศได้',
+    'listing.noGroups.desc':
+      'ลองให้ระบบเช็คกลุ่มของคุณดูว่ากลุ่มไหนลงประกาศ Facebook Marketplace ได้บ้าง',
+    'listing.noGroups.cta': 'เริ่มเช็คกลุ่ม',
+    'listing.noGroups.pending': 'กำลังเริ่ม…',
+
+    'listing.section.property': 'รายละเอียดทรัพย์',
+    'listing.kind.sale': 'ขาย',
+    'listing.kind.rent': 'ให้เช่า',
+    'listing.field.propertyType': 'ประเภท',
+    'listing.type.flat': 'คอนโด / แฟลต',
+    'listing.type.house': 'บ้านเดี่ยว',
+    'listing.type.townhouse': 'ทาวน์เฮาส์',
+    'listing.field.bedrooms': 'ห้องนอน',
+    'listing.field.bathrooms': 'ห้องน้ำ',
+    'listing.field.price': 'ราคา',
+    'listing.field.price.suffix': 'บาท',
+    'listing.field.sqm': 'พื้นที่',
+    'listing.field.sqm.suffix': 'ตร.ม.',
+    'listing.field.sqm.hint': 'ไม่บังคับ',
+
+    'listing.section.location': 'ทำเล',
+    'listing.field.location.placeholder': 'เช่น Urban Property Udon, อุดรธานี',
+    'listing.field.location.hint':
+      'ระบบจะพิมพ์ข้อความนี้ลงใน Facebook แล้วเลือกตัวเลือกแรกที่แนะนำขึ้นมา',
+
+    'listing.section.description': 'รายละเอียดประกาศ',
+    'listing.field.description.placeholder':
+      'เขียนรายละเอียดประกาศให้ครบ — สิ่งอำนวยความสะดวก จุดเด่น ช่องทางติดต่อ ฯลฯ',
+
+    'listing.section.photos': 'รูปประกาศ',
+    'listing.section.photos.sub': 'สูงสุด {max} รูป',
+    'listing.upload.cta': 'คลิกเพื่ออัปโหลดรูป',
+    'listing.upload.hint': 'JPEG, PNG, WebP หรือ HEIC ก็ได้',
+    'listing.heic.converting': 'กำลังแปลง HEIC…',
+    'listing.heic.failed': 'แสดง HEIC ไม่ได้',
+
+    'listing.section.schedule': 'ตั้งเวลาส่ง',
+    'listing.field.scheduledAt': 'เวลาส่ง',
+    'listing.field.jitter': 'Jitter (± นาที)',
+
+    'listing.section.targets': 'กลุ่มปลายทาง',
+    'listing.section.targets.count': 'เลือกแล้ว {n}',
+    'listing.selectAll': 'เลือกทั้งหมด',
+    'listing.clear': 'ล้าง',
+
+    'listing.submit': 'ตั้งเวลาลงประกาศ',
+    'listing.submitting': 'กำลังตั้งเวลา…',
+
+    'listing.err.noGroups': 'ยังไม่ได้เลือกกลุ่ม เลือกอย่างน้อย 1 กลุ่มก่อนนะ',
+    'listing.err.noPhotos': 'ยังไม่มีรูป อัปโหลดอย่างน้อย 1 รูปก่อนนะ',
+    'listing.err.submit': 'ตั้งเวลาประกาศไม่สำเร็จ',
+
+    'listing.confirm.eyebrow': 'ยืนยันการลงประกาศ',
+    'listing.confirm.title': 'ตั้งเวลาลงประกาศนี้เลยไหม?',
+    'listing.confirm.desc':
+      'ประกาศจะถูกส่งไป {n} กลุ่ม โดยแบ่งเป็น {b} รอบ',
+    'listing.confirm.cta': 'ตั้งเวลา',
+    'listing.toast.ok': 'ตั้งเวลาประกาศเรียบร้อย',
+    'listing.toast.ok.desc': '{n} กลุ่ม ใน {b} รอบ',
+    'listing.toast.fail': 'ตั้งเวลาไม่สำเร็จ',
+    'listing.toast.uploadFail': 'อัปโหลดไม่สำเร็จ',
+
+    /* ---------- Batch preview ---------- */
+    'batch.empty': 'เลือกกลุ่มและตั้งเวลาก่อน จะเห็นตัวอย่างรอบการส่ง',
+    'batch.summary.one': 'เลือก {n} กลุ่ม → {b} รอบ',
+    'batch.summary.many': 'เลือก {n} กลุ่ม → {b} รอบ',
+    'batch.row.one': 'รอบที่ {i} · {n} กลุ่ม',
+    'batch.row.many': 'รอบที่ {i} · {n} กลุ่ม',
+    'batch.footer': 'พัก {min}–{max} นาทีระหว่างรอบ · แก้ได้ที่หน้าตั้งค่า',
 
     /* ---------- Campaign detail ---------- */
     'camp.back': 'แคมเปญทั้งหมด',
@@ -704,19 +926,19 @@ const DICT = {
     'toast.groups.disable.ok': 'พักกลุ่มนี้แล้ว',
     'toast.groups.toggle.fail': 'เปลี่ยนสถานะไม่สำเร็จ',
 
-    'groups.action.scanCapabilities': 'สแกนความสามารถประกาศขาย',
-    'groups.action.scanCapabilities.alert': 'Worker จะเปิดเบราว์เซอร์และสแกนแต่ละกลุ่ม — ใช้เวลา ~5-10 วินาทีต่อกลุ่ม รีเฟรชหน้านี้หลังเสร็จ',
+    'groups.action.scanCapabilities': 'เช็คกลุ่มที่ลงประกาศได้',
+    'groups.action.scanCapabilities.alert': 'ระบบจะเปิดเบราว์เซอร์ไปเช็คทีละกลุ่ม ใช้เวลาประมาณ 5–10 วินาทีต่อกลุ่ม พอเสร็จแล้วกด Refresh หน้านี้ได้เลย',
     'groups.badge.listingOk': 'ประกาศขาย',
     'groups.badge.listingNo': 'ข้อความเท่านั้น',
     'groups.badge.notScanned': 'ยังไม่สแกน',
 
-    'confirm.groups.scan.eyebrow': 'สแกนความสามารถ',
-    'confirm.groups.scan.title': 'สแกนความสามารถประกาศขาย?',
-    'confirm.groups.scan.desc': 'Worker จะเปิดเบราว์เซอร์และสแกนแต่ละกลุ่ม — ใช้เวลา ~5-10 วินาทีต่อกลุ่ม รีเฟรชหน้านี้หลังเสร็จ',
-    'confirm.groups.scan.cta': 'เริ่มสแกน',
-    'toast.groups.scan.ok': 'เริ่มสแกนแล้ว',
-    'toast.groups.scan.ok.desc': 'Worker กำลังสแกนกลุ่ม รอสักครู่แล้วกด Refresh',
-    'toast.groups.scan.fail': 'เริ่มสแกนไม่สำเร็จ',
+    'confirm.groups.scan.eyebrow': 'ตรวจกลุ่ม',
+    'confirm.groups.scan.title': 'เช็คว่ากลุ่มไหนลงประกาศขายได้บ้าง?',
+    'confirm.groups.scan.desc': 'ระบบจะเปิดเบราว์เซอร์ไปเช็คทีละกลุ่ม ใช้เวลาประมาณ 5–10 วินาทีต่อกลุ่ม พอเสร็จแล้วกด Refresh หน้านี้ได้เลย',
+    'confirm.groups.scan.cta': 'เริ่มเช็ค',
+    'toast.groups.scan.ok': 'เริ่มเช็คแล้ว',
+    'toast.groups.scan.ok.desc': 'ระบบกำลังไล่เช็คทีละกลุ่ม รอสักครู่แล้วกด Refresh',
+    'toast.groups.scan.fail': 'เริ่มไม่สำเร็จ',
 
     /* ---------- Logs ---------- */
     'logs.eyebrow': 'กิจกรรม',
@@ -753,8 +975,8 @@ const DICT = {
     'settings.delay.focus.hint': 'รอกี่วินาทีหลังช่องพิมพ์เปิดขึ้นมา',
     'settings.delay.retry': 'หน่วงก่อนลองใหม่',
     'settings.delay.retry.hint': 'พอส่งพลาดแล้วรอกี่วินาทีก่อนลองอีก',
-    'settings.listing.delay': 'ประกาศขาย: หน่วงเวลาระหว่างชุด',
-    'settings.listing.delay.hint': 'พักระหว่างการส่งชุดไปยังประกาศขาย',
+    'settings.listing.delay': 'ประกาศขาย: พักระหว่างรอบ',
+    'settings.listing.delay.hint': 'พักกี่มิลลิวินาทีระหว่างแต่ละรอบของการลงประกาศ',
     'settings.retry.eyebrow': 'ลองใหม่',
     'settings.retry.title': 'ถ้าส่งไม่สำเร็จ',
     'settings.retry.max': 'ลองใหม่ได้สูงสุดกี่ครั้งต่อกลุ่ม',
@@ -775,9 +997,9 @@ const DICT = {
     'settings.toggle.jitter.hint':
       'เหลื่อมเวลาโพสต์ตามค่า jitter ที่ตั้งไว้ในแต่ละแคมเปญ',
     'settings.listing.eyebrow': 'ประกาศขาย',
-    'settings.listing.title': 'ควบคุมชุด',
-    'settings.listing.maxbatches': 'จำนวนชุดสูงสุดต่อวัน',
-    'settings.listing.maxbatches.hint': 'เตือน — จะแจ้งถ้าเกินจำนวนชุดต่อวันที่ตั้งไว้',
+    'settings.listing.title': 'ตั้งค่าการส่งเป็นรอบ',
+    'settings.listing.maxbatches': 'ส่งได้สูงสุดกี่รอบต่อวัน',
+    'settings.listing.maxbatches.hint': 'แค่เตือน — ถ้าเกินจำนวนที่ตั้งไว้จะมีแจ้งขึ้นมา',
 
     'confirm.settings.eyebrow': 'บันทึกการตั้งค่า',
     'confirm.settings.title': 'บันทึกการตั้งค่าใหม่?',

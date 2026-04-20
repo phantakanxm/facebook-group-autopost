@@ -6,13 +6,14 @@ import { Textarea, Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { Table, THead, TH, TRow, TD } from '@/components/ui/table';
 import { StatusPill } from '@/components/ui/status-pill';
-import { useConfirm, useToast } from '@/components/ui/feedback';
+import { useConfirm, useToast, useLoading } from '@/components/ui/feedback';
 import { useT, useLocale } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 
 export default function GroupsPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const loading = useLoading();
   const t = useT();
   const { locale } = useLocale();
   const loc = locale === 'th' ? 'th-TH' : 'en-GB';
@@ -41,7 +42,10 @@ export default function GroupsPage() {
     });
     if (!ok) return;
     try {
-      const res = await bulk.mutateAsync({ urls: arr });
+      const res = await loading.wrap(
+        t('common.working.addGroups'),
+        () => bulk.mutateAsync({ urls: arr }),
+      );
       setUrls('');
       toast.success(
         t('toast.groups.add.ok'),
@@ -63,7 +67,7 @@ export default function GroupsPage() {
     });
     if (!ok) return;
     try {
-      await autoSync.mutateAsync();
+      await loading.wrap(t('common.working.sync'), () => autoSync.mutateAsync());
       toast.info(t('toast.groups.sync.ok'), t('toast.groups.sync.ok.desc'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
@@ -81,7 +85,7 @@ export default function GroupsPage() {
     });
     if (!ok) return;
     try {
-      await capScan.mutateAsync();
+      await loading.wrap(t('common.working.scan'), () => capScan.mutateAsync());
       toast.info(t('toast.groups.scan.ok'), t('toast.groups.scan.ok.desc'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
@@ -101,7 +105,7 @@ export default function GroupsPage() {
     });
     if (!ok) return;
     try {
-      await remove.mutateAsync({ id: g.id });
+      await loading.wrap(t('common.working.remove'), () => remove.mutateAsync({ id: g.id }));
       toast.success(t('toast.groups.remove.ok'), label);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
@@ -111,7 +115,10 @@ export default function GroupsPage() {
 
   const handleToggleActive = async (g: { id: string; name: string | null; fbGroupId: string }, next: boolean) => {
     try {
-      await setActive.mutateAsync({ id: g.id, isActive: next });
+      await loading.wrap(
+        t('common.working.toggle'),
+        () => setActive.mutateAsync({ id: g.id, isActive: next }),
+      );
       toast.success(
         next ? t('toast.groups.enable.ok') : t('toast.groups.disable.ok'),
         g.name ?? g.fbGroupId,

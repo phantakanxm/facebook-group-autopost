@@ -1,6 +1,217 @@
+@import url('https://api.fontshare.com/v2/css?f[]=sentient@300,400,500,700&f[]=switzer@400,500,600,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-body { @apply bg-neutral-50 text-neutral-900; font-family: ui-sans-serif, system-ui, sans-serif; }
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces — warm ivory paper */
+  --bg-paper:   oklch(0.984 0.008 68);
+  --bg-surface: oklch(0.975 0.010 68);
+  --bg-raised:  oklch(1.000 0.000 0);
+
+  /* Ink — warm off-black, tinted toward oxblood */
+  --ink:        oklch(0.205 0.018 32);
+  --ink-muted:  oklch(0.470 0.014 40);
+  --ink-faint:  oklch(0.660 0.012 50);
+
+  /* Hairlines — tinted warm */
+  --border:         oklch(0.895 0.010 65);
+  --border-strong:  oklch(0.780 0.012 55);
+
+  /* Accent — oxblood / bordeaux */
+  --accent:      oklch(0.402 0.115 18);
+  --accent-soft: oklch(0.948 0.028 22);
+  --accent-ink:  oklch(0.985 0.008 60);
+
+  /* Semantic — muted, editorial */
+  --positive: oklch(0.500 0.080 150);
+  --caution:  oklch(0.620 0.125 75);
+  --danger:   oklch(0.500 0.140 25);
+
+  --ring: color-mix(in oklch, var(--accent) 55%, transparent);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg-paper:   oklch(0.172 0.012 32);
+  --bg-surface: oklch(0.195 0.013 32);
+  --bg-raised:  oklch(0.225 0.014 32);
+
+  --ink:        oklch(0.948 0.010 60);
+  --ink-muted:  oklch(0.720 0.012 55);
+  --ink-faint:  oklch(0.520 0.010 55);
+
+  --border:        oklch(0.275 0.013 35);
+  --border-strong: oklch(0.375 0.014 35);
+
+  --accent:      oklch(0.700 0.130 20);
+  --accent-soft: oklch(0.280 0.055 20);
+  --accent-ink:  oklch(0.120 0.010 30);
+
+  --positive: oklch(0.740 0.110 150);
+  --caution:  oklch(0.780 0.130 80);
+  --danger:   oklch(0.720 0.150 25);
+
+  --ring: color-mix(in oklch, var(--accent) 65%, transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
+  }
+
+  body {
+    background-color: var(--bg-paper);
+    color: var(--ink);
+    font-family: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Paper texture — faint, warm, only in light mode */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+      radial-gradient(circle at 20% 10%, color-mix(in oklch, var(--accent) 3%, transparent), transparent 40%),
+      radial-gradient(circle at 85% 90%, color-mix(in oklch, var(--accent) 2%, transparent), transparent 45%);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Sentient', ui-serif, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    color: var(--ink);
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* Native form baseline — tidy defaults before components apply */
+  input, textarea, select, button {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+
+  /* Tabular numerics on data */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Components                                                          */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  .rule {
+    @apply h-px w-full bg-line;
+  }
+
+  .rule-strong {
+    @apply h-px w-full bg-line-strong;
+  }
+
+  .small-caps {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+
+  .editorial-num {
+    font-family: 'Sentient', ui-serif, Georgia, serif;
+    font-feature-settings: 'tnum', 'lnum';
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.03em;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion                                                              */
+/* ------------------------------------------------------------------ */
+
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes confirm-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spin-smooth {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+.animate-rise { animation: fade-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-rise-1 { animation-delay: 40ms; }
+.animate-rise-2 { animation-delay: 80ms; }
+.animate-rise-3 { animation-delay: 120ms; }
+.animate-rise-4 { animation-delay: 160ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

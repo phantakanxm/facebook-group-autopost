@@ -2,29 +2,42 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import { TRPCProvider } from '@/lib/trpc-client';
 import { SessionBanner } from '@/components/session-banner';
+import { AppShell } from '@/components/app-shell';
+import { FeedbackProvider } from '@/components/ui/feedback';
+import { LocaleProvider } from '@/lib/i18n';
 
-export const metadata = { title: 'FB Auto-Post' };
+export const metadata = {
+  title: 'Atelier · Broadcast studio',
+  description: 'A calm workshop for queueing Facebook group posts with intention.',
+};
+
+const themeInit = `
+(function(){
+  try {
+    var stored = localStorage.getItem('theme');
+    var prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var mode = stored || (prefers ? 'dark' : 'light');
+    if (mode === 'dark') document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="th">
+    <html lang="th" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>
         <TRPCProvider>
-          <div className="mx-auto max-w-6xl p-6">
-            <header className="mb-8 flex items-center justify-between">
-              <h1 className="text-2xl font-semibold">FB Auto-Post</h1>
-              <nav className="flex gap-4 text-sm">
-                <a href="/" className="hover:underline">Dashboard</a>
-                <a href="/campaigns" className="hover:underline">Campaigns</a>
-                <a href="/groups" className="hover:underline">Groups</a>
-                <a href="/logs" className="hover:underline">Logs</a>
-                <a href="/settings" className="hover:underline">Settings</a>
-                <a href="/session" className="hover:underline">Session</a>
-              </nav>
-            </header>
-            <SessionBanner />
-            {children}
-          </div>
+          <LocaleProvider>
+            <FeedbackProvider>
+              <AppShell>
+                <SessionBanner />
+                {children}
+              </AppShell>
+            </FeedbackProvider>
+          </LocaleProvider>
         </TRPCProvider>
       </body>
     </html>

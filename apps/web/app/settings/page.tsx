@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader, Surface, SectionHeader, Divider } from '@/components/ui/section';
 import { Input, Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
-import { useConfirm, useToast } from '@/components/ui/feedback';
+import { useConfirm, useToast, useLoading } from '@/components/ui/feedback';
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 
@@ -34,6 +34,7 @@ export default function SettingsPage() {
   const [v, setV] = useState<Values | null>(null);
   const confirm = useConfirm();
   const toast = useToast();
+  const loading = useLoading();
   const t = useT();
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function SettingsPage() {
     });
     if (!ok) return;
     try {
-      await update.mutateAsync(v);
+      await loading.wrap(t('common.working.saveSettings'), () => update.mutateAsync(v));
       toast.success(t('toast.settings.ok'), t('toast.settings.ok.desc'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';

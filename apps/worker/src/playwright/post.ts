@@ -13,6 +13,8 @@ export interface PostInput {
   fbUrl: string;
   content: string;
   mediaFiles: string[];
+  /** 'images' | 'video' | 'none' — selects which hidden file input to target. */
+  mediaType: 'images' | 'video' | 'none';
   enableScrollBeforePost: boolean;
   delayBeforePost: { min: number; max: number };
   delayAfterFocus: { min: number; max: number };
@@ -72,12 +74,14 @@ export async function postToGroup(
     await humanDelay(input.delayBeforePost.min, input.delayBeforePost.max);
 
     if (input.mediaFiles.length > 0) {
-      const attachSel = await firstMatch(page, SELECTORS.attachMedia);
-      if (attachSel) {
-        await humanClick(page, attachSel);
-        await humanDelay(500, 1500);
+      // Do NOT click the visible "Photo/Video" button — that opens the OS file picker
+      // and blocks JS. Playwright's setInputFiles works on hidden inputs directly.
+      const candidates = input.mediaType === 'video' ? SELECTORS.videoFileInput : SELECTORS.imageFileInput;
+      const inputSel = await firstMatch(page, candidates);
+      if (!inputSel) {
+        return await fail(page, 'selector_not_found', `${input.mediaType} file input not found`);
       }
-      await page.setInputFiles(SELECTORS.fileInput, input.mediaFiles);
+      await page.setInputFiles(inputSel, input.mediaFiles);
       // Wait for thumbnails to render — simple heuristic (longer delay for video)
       await sleep(3_000 + input.mediaFiles.length * 1_500);
       await humanDelay(1_000, 3_000);

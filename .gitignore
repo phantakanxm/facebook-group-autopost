@@ -2,13 +2,29 @@ node_modules/
 .next/
 dist/
 *.log
-logs/
+/logs/
+apps/*/logs/
 .env
 .env.local
 data.db
 data.db-journal
+dev.db
+dev.db-journal
 sessions/
 uploads/
 .DS_Store
 coverage/
 .turbo/
+*.tsbuildinfo
+
+# Personal screenshots / images (root only)
+/IMG_*.jpeg
+/IMG_*.jpg
+/IMG_*.png
+/Screenshot *.png
+/Screenshot *.jpg
+
+# Dev notes (personal, not for repo)
+/.impeccable.md
+/question-to-you.md
+/requirement.md

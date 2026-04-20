@@ -1,28 +1,98 @@
 'use client';
 import { trpc } from '@/lib/trpc-client';
 import Link from 'next/link';
+import { PageHeader, Surface, EmptyState } from '@/components/ui/section';
+import { Button } from '@/components/ui/button';
+import { Table, THead, TH, TRow, TD } from '@/components/ui/table';
+import { CampaignStatus } from '@/components/ui/status-pill';
+import { useT, useLocale } from '@/lib/i18n';
 
 export default function CampaignsPage() {
   const list = trpc.campaign.list.useQuery();
+  const t = useT();
+  const { locale } = useLocale();
+  const loc = locale === 'th' ? 'th-TH' : 'en-GB';
+
   return (
-    <main>
-      <div className="mb-4 flex justify-between">
-        <h2 className="text-xl font-semibold">Campaigns</h2>
-        <Link href="/campaigns/new" className="rounded bg-blue-600 px-4 py-2 text-white">New</Link>
-      </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-left"><th>Title</th><th>Status</th><th>Scheduled</th><th>Groups</th></tr></thead>
-        <tbody>
-          {list.data?.map((c) => (
-            <tr key={c.id} className="border-t">
-              <td><Link href={`/campaigns/${c.id}`} className="text-blue-700">{c.title ?? c.content.slice(0, 40)}</Link></td>
-              <td>{c.status}</td>
-              <td>{new Date(c.scheduledAt).toLocaleString()}</td>
-              <td>{c.groups.length}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+    <div className="space-y-10 animate-rise">
+      <PageHeader
+        eyebrow={t('camps.eyebrow')}
+        title={t('camps.title')}
+        subtitle={t('camps.subtitle')}
+        actions={
+          <Link href="/campaigns/new">
+            <Button>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path d="M7 2.5v9M2.5 7h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              {t('camps.new')}
+            </Button>
+          </Link>
+        }
+      />
+
+      {!list.data ? (
+        <Surface><p className="text-ink-muted">{t('common.loading')}</p></Surface>
+      ) : list.data.length === 0 ? (
+        <Surface>
+          <EmptyState
+            title={t('camps.empty.title')}
+            description={t('camps.empty.desc')}
+            action={
+              <Link href="/campaigns/new">
+                <Button variant="outline" size="sm">{t('camps.empty.cta')}</Button>
+              </Link>
+            }
+          />
+        </Surface>
+      ) : (
+        <Surface padded={false}>
+          <Table>
+            <THead>
+              <tr>
+                <TH className="pl-6">{t('camps.th.title')}</TH>
+                <TH>{t('camps.th.status')}</TH>
+                <TH>{t('camps.th.scheduled')}</TH>
+                <TH align="right" className="pr-6">{t('camps.th.groups')}</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {list.data.map((c) => {
+                const date = new Date(c.scheduledAt);
+                return (
+                  <TRow key={c.id} interactive>
+                    <TD className="pl-6">
+                      <Link
+                        href={`/campaigns/${c.id}`}
+                        className="group flex flex-col gap-1"
+                      >
+                        <span className="font-medium text-ink transition-colors group-hover:text-[var(--accent)]">
+                          {c.title ?? c.content.slice(0, 48) + (c.content.length > 48 ? '…' : '')}
+                        </span>
+                        <span className="text-2xs text-ink-faint">{c.id.slice(0, 8)}</span>
+                      </Link>
+                    </TD>
+                    <TD>
+                      <CampaignStatus status={c.status} />
+                    </TD>
+                    <TD tabular muted>
+                      <span className="text-ink">
+                        {date.toLocaleDateString(loc, { day: '2-digit', month: 'short' })}
+                      </span>
+                      <span className="ml-2">
+                        {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </span>
+                    </TD>
+                    <TD align="right" tabular className="pr-6">
+                      <span className="editorial-num text-lg">{c.groups.length}</span>
+                    </TD>
+                  </TRow>
+                );
+              })}
+            </tbody>
+          </Table>
+        </Surface>
+      )}
+    </div>
   );
 }

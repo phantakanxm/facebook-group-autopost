@@ -19,7 +19,7 @@ Personal tool to post the same content to multiple FB groups on your account, wi
 pnpm dev   # runs web + worker concurrently
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3100.
 
 ## First-time FB session
 1. Go to **Session** page.
