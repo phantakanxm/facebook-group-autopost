@@ -109,4 +109,14 @@ if (fs.existsSync(msPwSrc)) {
   });
 }
 
+// Write minimal package.json with type:module to both staged dirs.
+// Electron's run-as-node mode lacks Node 20.18's auto-detect-and-reparse
+// fallback, so ESM-syntax dist/*.js files MUST have a parent package.json
+// declaring "type": "module" or they fail with "Cannot use import statement
+// outside a module". Both apps/db and apps/worker are ESM packages.
+const moduleStub = JSON.stringify({ name: 'staged', private: true, type: 'module' }, null, 2) + '\n';
+fs.writeFileSync(path.join(appDbStaged, 'package.json'), moduleStub);
+fs.writeFileSync(path.join(appWorkerStaged, 'package.json'), moduleStub);
+console.log('[stage] wrote type:module package.json to staged dirs');
+
 console.log('[stage] done');
