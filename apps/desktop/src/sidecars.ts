@@ -78,9 +78,22 @@ export function killAll(sidecars: Sidecar[]): Promise<void> {
   return Promise.all(sidecars.map((s) =>
     new Promise<void>((resolve) => {
       if (s.proc.killed || s.proc.exitCode !== null) return resolve();
-      s.proc.once('exit', () => resolve());
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      s.proc.once('exit', finish);
+      const timer = setTimeout(() => {
+        if (s.proc.exitCode === null) {
+          // SIGTERM didn't take — escalate. The 'exit' listener above will
+          // fire once SIGKILL actually delivers, then call finish().
+          s.proc.kill('SIGKILL');
+        }
+      }, 3000);
       s.proc.kill('SIGTERM');
-      setTimeout(() => { if (!s.proc.killed) s.proc.kill('SIGKILL'); resolve(); }, 3000);
     })
   )).then(() => undefined);
 }

@@ -60,9 +60,14 @@ app.whenReady().then(boot).catch((err) => {
 });
 
 app.on('window-all-closed', async () => {
-  await killAll(sidecars);
-  sidecars = [];
-  if (process.platform !== 'darwin') app.quit();
+  try {
+    await killAll(sidecars);
+  } catch (err) {
+    console.error('killAll failed on window-all-closed', err);
+  } finally {
+    sidecars = [];
+    if (process.platform !== 'darwin') app.quit();
+  }
 });
 
 app.on('before-quit', async (e) => {
@@ -70,6 +75,11 @@ app.on('before-quit', async (e) => {
   e.preventDefault();
   const toKill = sidecars;
   sidecars = [];
-  await killAll(toKill);
-  app.quit();
+  try {
+    await killAll(toKill);
+  } catch (err) {
+    console.error('killAll failed during quit', err);
+  } finally {
+    app.quit();
+  }
 });
