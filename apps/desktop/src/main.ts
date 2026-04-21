@@ -27,8 +27,9 @@ async function boot(): Promise<void> {
     webPort,
   });
 
-  const web = spawnWeb(repoRoot, env);
-  const worker = spawnWorker(repoRoot, env);
+  const packaged = app.isPackaged;
+  const web = spawnWeb(repoRoot, env, { packaged });
+  const worker = spawnWorker(repoRoot, env, { packaged });
   sidecars = [web, worker];
 
   const url = `http://127.0.0.1:${webPort}/`;
