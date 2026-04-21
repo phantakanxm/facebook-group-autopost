@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@app/db": "workspace:*",
     "@app/shared": "workspace:*",
     "electron-updater": "^6.3.9"
   },

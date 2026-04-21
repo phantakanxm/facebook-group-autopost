@@ -17,6 +17,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@app/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@app/shared':
         specifier: workspace:*
         version: link:../../packages/shared
