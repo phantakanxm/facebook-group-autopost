@@ -5,6 +5,7 @@ import { findFreePort } from './port';
 import { buildEnv, spawnWeb, spawnWorker, waitForHttp, killAll, Sidecar } from './sidecars';
 import { runMigrations } from './migrate';
 import { runSeed } from './seed';
+import { initAutoUpdater } from './updater';
 
 // Dev: repo root is 3 dirs above apps/desktop/dist/main.js.
 // Packaged: layout is under <Resources>/.
@@ -78,6 +79,7 @@ async function boot(): Promise<void> {
   });
 
   await win.loadURL(url);
+  initAutoUpdater();
 }
 
 app.whenReady().then(boot).catch((err) => {
