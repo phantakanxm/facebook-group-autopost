@@ -1,7 +1,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import path, { join, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { resolveAppPaths } from '@app/shared';
+import { resolveAppPaths } from '@app/shared/paths';
 
 const repoRoot = path.resolve(process.cwd(), '..', '..');
 const { uploadRoot } = resolveAppPaths({ repoRoot });

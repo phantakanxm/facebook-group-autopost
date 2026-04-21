@@ -1,11 +1,12 @@
 'use client';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { CampaignForm } from '@/components/campaign-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/ui/section';
 import { useT } from '@/lib/i18n';
 
-export default function NewPostCampaignPage() {
+function NewPostCampaignContent() {
   const router = useRouter();
   const t = useT();
   const searchParams = useSearchParams();
@@ -34,5 +35,13 @@ export default function NewPostCampaignPage() {
         onSaved={(id) => router.push(`/campaigns/${id}`)}
       />
     </div>
+  );
+}
+
+export default function NewPostCampaignPage() {
+  return (
+    <Suspense>
+      <NewPostCampaignContent />
+    </Suspense>
   );
 }
