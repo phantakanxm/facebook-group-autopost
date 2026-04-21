@@ -30,3 +30,6 @@ coverage/
 /.impeccable.md
 /question-to-you.md
 /requirement.md
+
+# Pre-staged installer resources (built by scripts/stage-resources.mjs)
+apps/desktop/.staged/

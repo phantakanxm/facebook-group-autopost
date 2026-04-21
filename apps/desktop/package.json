@@ -10,7 +10,7 @@
     "dev:fast": "tsc -p tsconfig.json && electron dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "prepack:all": "pnpm -F web build && pnpm -F worker build && pnpm -F @app/db build",
+    "prepack:all": "pnpm -F web build && pnpm -F worker build && pnpm -F @app/db build && node ./scripts/stage-resources.mjs",
     "pack": "pnpm build && electron-builder --dir",
     "dist": "pnpm build && electron-builder"
   },

@@ -12,32 +12,12 @@ extraResources:
   - from: ../../apps/web/.next/standalone
     to: app-web
     filter: ["**/*"]
-  - from: ../../apps/worker/dist
-    to: app-worker/dist
+  - from: .staged/app-worker
+    to: app-worker
     filter: ["**/*"]
-  - from: ../../apps/worker/node_modules
-    to: app-worker/node_modules
-    filter:
-      - "**/*"
-      - "!**/*.md"
-      - "!**/test/**"
-      - "!**/tests/**"
-  - from: ../../apps/worker/ms-playwright
-    to: app-worker/ms-playwright
-    filter:
-      - "**/*"
-      # We use headed Chromium for FB anti-detection; headless_shell is dead weight (~150MB)
-      - "!chromium_headless_shell-*/**/*"
-  - from: ../../packages/db/prisma
-    to: app-db/prisma
-  - from: ../../packages/db/dist
-    to: app-db/dist
-  - from: ../../packages/db/node_modules
-    to: app-db/node_modules
-    filter:
-      - "prisma/**/*"
-      - "@prisma/**/*"
-      - ".prisma/**/*"
+  - from: .staged/app-db
+    to: app-db
+    filter: ["**/*"]
 
 mac:
   target:
