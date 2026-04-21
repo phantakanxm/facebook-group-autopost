@@ -62,16 +62,14 @@ if (fs.existsSync(pnpmSharedPrisma)) {
 
 // .prisma (query engine) lives as a sibling of @prisma/client in the pnpm
 // store, NOT inside packages/db/node_modules. Resolve the real location via
-// the @prisma/client symlink, then copy its sibling .prisma directory.
+// the @prisma/client symlink (works regardless of Prisma version / pnpm hash).
 const clientLink = path.join(dbNodeModulesSrc, '@prisma', 'client');
-const pnpmClientReal = path.join(repoRoot, 'node_modules', '.pnpm', '@prisma+client@5.22.0_prisma@5.22.0', 'node_modules', '.prisma');
-// Try the well-known pnpm store path first, then resolve via symlink
-let dotPrismaSrc = pnpmClientReal;
-if (!fs.existsSync(dotPrismaSrc) && fs.existsSync(clientLink)) {
+let dotPrismaSrc = null;
+if (fs.existsSync(clientLink)) {
   const realClient = fs.realpathSync(clientLink);
   dotPrismaSrc = path.resolve(realClient, '..', '..', '.prisma');
 }
-if (fs.existsSync(dotPrismaSrc)) {
+if (dotPrismaSrc && fs.existsSync(dotPrismaSrc)) {
   console.log(`[stage] app-db .prisma engine from ${dotPrismaSrc}`);
   copy(dotPrismaSrc, path.join(dbNodeModulesDst, '.prisma'));
 } else {

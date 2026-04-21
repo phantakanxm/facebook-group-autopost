@@ -7,7 +7,7 @@
     "build": "tsc -p tsconfig.json",
     "predev": "pnpm -F @app/db build && pnpm -F worker build && pnpm -F web build",
     "dev": "tsc -p tsconfig.json && electron dist/main.js",
-    "dev:fast": "tsc -p tsconfig.json && electron dist/main.js",
+    "dev:fast": "echo 'skipping predev — assumes web/worker/db are already built' && tsc -p tsconfig.json && electron dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "prepack:all": "pnpm -F web build && pnpm -F worker build && pnpm -F @app/db build && node ./scripts/stage-resources.mjs",
