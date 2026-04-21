@@ -47,6 +47,10 @@ async function boot(): Promise<void> {
     webPort,
   });
 
+  if (packaged) {
+    env.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'app-worker/ms-playwright');
+  }
+
   const web = spawnWeb(layout.webRoot, env, { packaged });
   const worker = spawnWorker(layout.workerRoot, env, { packaged });
   sidecars = [web, worker];

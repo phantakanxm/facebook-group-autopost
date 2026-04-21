@@ -22,6 +22,9 @@ extraResources:
       - "!**/*.md"
       - "!**/test/**"
       - "!**/tests/**"
+  - from: ../../apps/worker/ms-playwright
+    to: app-worker/ms-playwright
+    filter: ["**/*"]
   - from: ../../packages/db/prisma
     to: app-db/prisma
   - from: ../../packages/db/dist

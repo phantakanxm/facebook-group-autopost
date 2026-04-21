@@ -4,6 +4,8 @@ dist/
 *.log
 /logs/
 apps/*/logs/
+# Playwright browsers downloaded to local path for packaging
+apps/worker/ms-playwright/
 .env
 .env.local
 data.db
