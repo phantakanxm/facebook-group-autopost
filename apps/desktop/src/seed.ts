@@ -2,13 +2,13 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 
 export interface SeedOpts {
-  repoRoot: string;
+  dbRoot: string;
   databaseUrl: string;
 }
 
 export function runSeed(opts: SeedOpts): Promise<void> {
   return new Promise((resolve, reject) => {
-    const cwd = path.join(opts.repoRoot, 'packages/db');
+    const cwd = opts.dbRoot;
     const seedScript = path.join(cwd, 'dist/seed.js');
     const proc = spawn(
       process.execPath,

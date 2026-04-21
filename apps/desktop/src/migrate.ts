@@ -2,13 +2,13 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 
 export interface MigrateOpts {
-  repoRoot: string;
+  dbRoot: string;       // was repoRoot
   databaseUrl: string;
 }
 
 export function runMigrations(opts: MigrateOpts): Promise<void> {
   return new Promise((resolve, reject) => {
-    const cwd = path.join(opts.repoRoot, 'packages/db');
+    const cwd = opts.dbRoot;
     const prismaBin = path.join(cwd, 'node_modules/prisma/build/index.js');
     const proc = spawn(
       process.execPath,

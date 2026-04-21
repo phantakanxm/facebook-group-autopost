@@ -35,22 +35,13 @@ export function buildEnv(s: SidecarEnv): NodeJS.ProcessEnv {
 }
 
 export function spawnWeb(
-  repoRoot: string,
+  webRoot: string,
   env: NodeJS.ProcessEnv,
-  opts: { packaged: boolean }
+  _opts: { packaged: boolean }
 ): Sidecar {
-  // Packaged path is wired up properly in Task 3.4 (electron-builder layout).
-  // The current packaged branch is a placeholder mirroring the dev location.
-  const cwd = opts.packaged
-    ? path.join(repoRoot, 'apps/web/.next/standalone/apps/web')
-    : path.join(repoRoot, 'apps/web');
-  const script = opts.packaged
-    ? path.join(cwd, 'server.js')
-    : path.join(cwd, 'node_modules/next/dist/bin/next');
-  const args = opts.packaged
-    ? [script]
-    : [script, 'start', '-p', env.PORT!];
-  const proc = spawn(process.execPath, args, {
+  const cwd = webRoot;
+  const script = path.join(cwd, 'server.js');
+  const proc = spawn(process.execPath, [script], {
     cwd,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -61,14 +52,11 @@ export function spawnWeb(
 }
 
 export function spawnWorker(
-  repoRoot: string,
+  workerRoot: string,
   env: NodeJS.ProcessEnv,
-  opts: { packaged: boolean }
+  _opts: { packaged: boolean }
 ): Sidecar {
-  // Packaged path: see Task 3.4 — currently mirrors dev location.
-  const cwd = opts.packaged
-    ? path.join(repoRoot, 'apps/worker')
-    : path.join(repoRoot, 'apps/worker');
+  const cwd = workerRoot;
   const proc = spawn(process.execPath, ['dist/main.js'], {
     cwd,
     env,

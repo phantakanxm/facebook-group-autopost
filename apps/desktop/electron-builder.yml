@@ -1,0 +1,60 @@
+appId: com.phantakanxm.fbgroupautopost
+productName: FB Group Autopost
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - package.json
+
+extraResources:
+  - from: ../../apps/web/.next/standalone
+    to: app-web
+    filter: ["**/*"]
+  - from: ../../apps/worker/dist
+    to: app-worker/dist
+    filter: ["**/*"]
+  - from: ../../apps/worker/node_modules
+    to: app-worker/node_modules
+    filter:
+      - "**/*"
+      - "!**/*.md"
+      - "!**/test/**"
+      - "!**/tests/**"
+  - from: ../../packages/db/prisma
+    to: app-db/prisma
+  - from: ../../packages/db/dist
+    to: app-db/dist
+  - from: ../../packages/db/node_modules
+    to: app-db/node_modules
+    filter:
+      - "prisma/**/*"
+      - "@prisma/**/*"
+      - ".prisma/**/*"
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+  category: public.app-category.productivity
+  icon: assets/icon.png
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icon.png
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Network
+  icon: assets/icon.png
+
+publish:
+  provider: github
+  owner: phantakanxm
+  repo: facebook-group-autopost
+  releaseType: release
