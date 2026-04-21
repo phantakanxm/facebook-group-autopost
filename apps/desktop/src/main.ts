@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, dialog, shell } from 'electron';
 import path from 'node:path';
 import { getDesktopPaths, toDatabaseUrl } from './paths';
 import { findFreePort } from './port';
@@ -58,6 +58,12 @@ async function boot(): Promise<void> {
 
 app.whenReady().then(boot).catch((err) => {
   console.error('boot failed', err);
+  const message = err instanceof Error ? err.message : String(err);
+  // dialog.showErrorBox is sync and works during/after app ready; safe here
+  dialog.showErrorBox(
+    'FB Group Autopost — startup failed',
+    `${message}\n\nCheck logs and try reopening. If this persists, file an issue.`,
+  );
   app.quit();
 });
 
