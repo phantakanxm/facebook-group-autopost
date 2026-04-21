@@ -19,6 +19,9 @@ export interface Sidecar {
 export function buildEnv(s: SidecarEnv): NodeJS.ProcessEnv {
   return {
     ...process.env,
+    // process.execPath inside Electron is the Electron binary, not Node.
+    // This var tells Electron to run as plain Node when re-spawned via execPath.
+    ELECTRON_RUN_AS_NODE: '1',
     NODE_ENV: 'production',
     APP_DATA_DIR: s.appDataDir,
     DATABASE_URL: s.databaseUrl,

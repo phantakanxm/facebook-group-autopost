@@ -15,7 +15,11 @@ export function runMigrations(opts: MigrateOpts): Promise<void> {
       [prismaBin, 'migrate', 'deploy'],
       {
         cwd,
-        env: { ...process.env, DATABASE_URL: opts.databaseUrl },
+        env: {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: '1',
+          DATABASE_URL: opts.databaseUrl,
+        },
         stdio: ['ignore', 'pipe', 'pipe'],
       }
     );
