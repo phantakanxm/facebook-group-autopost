@@ -56,4 +56,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # electron-builder picks up GH_TOKEN to upload to Releases
-        run: pnpm exec electron-builder --publish always
+        # Compile TypeScript first (produces dist/main.js — required by electron-builder)
+        run: pnpm build && pnpm exec electron-builder --publish always
