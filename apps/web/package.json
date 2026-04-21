@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev -p 3100",
     "build": "dotenv -e ../../.env -- next build",
+    "postbuild": "node ./scripts/copy-standalone-assets.mjs",
     "start": "dotenv -e ../../.env -- next start -p 3100",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

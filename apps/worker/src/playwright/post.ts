@@ -1,6 +1,7 @@
 // apps/worker/src/playwright/post.ts
-import { resolve } from 'node:path';
+import path from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { paths } from '../paths.js';
 import type { BrowserContext } from 'playwright';
 import type { PostResult } from '@app/shared';
 import { SELECTORS, firstMatch } from './selectors.js';
@@ -21,9 +22,9 @@ export interface PostInput {
 }
 
 function screenshotPath(): string {
-  const dir = resolve(process.cwd(), 'logs', 'screenshots');
+  const dir = path.join(paths.logDir, 'screenshots');
   mkdirSync(dir, { recursive: true });
-  return resolve(dir, `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`);
+  return path.join(dir, `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`);
 }
 
 export async function postToGroup(

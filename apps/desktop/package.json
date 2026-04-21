@@ -1,0 +1,29 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "predev": "pnpm -F @app/db build && pnpm -F worker build && pnpm -F web build",
+    "dev": "tsc -p tsconfig.json && electron dist/main.js",
+    "dev:fast": "echo 'skipping predev — assumes web/worker/db are already built' && tsc -p tsconfig.json && electron dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepack:all": "pnpm -F web build && pnpm -F worker build && pnpm -F @app/db build && node ./scripts/stage-resources.mjs",
+    "pack": "pnpm build && electron-builder --dir",
+    "dist": "pnpm build && electron-builder"
+  },
+  "dependencies": {
+    "@app/db": "workspace:*",
+    "@app/shared": "workspace:*",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

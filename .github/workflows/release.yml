@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm -F @app/db exec prisma generate
+
+      - name: Build all
+        run: |
+          pnpm -F @app/shared build
+          pnpm -F @app/db build
+          pnpm -F web build
+          pnpm -F worker build
+
+      - name: Install Playwright Chromium (bundled path)
+        shell: bash
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ./apps/worker/ms-playwright
+        run: pnpm -F worker exec playwright install chromium
+
+      - name: Stage resources for electron-builder
+        run: node apps/desktop/scripts/stage-resources.mjs
+
+      - name: Build + publish Electron app
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder picks up GH_TOKEN to upload to Releases
+        run: pnpm exec electron-builder --publish always

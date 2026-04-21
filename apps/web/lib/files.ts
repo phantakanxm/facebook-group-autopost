@@ -1,8 +1,12 @@
 import { writeFile, mkdir } from 'node:fs/promises';
-import { resolve, join, relative } from 'node:path';
+import path, { join, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { resolveAppPaths } from '@app/shared/paths';
 
-export const UPLOAD_ROOT = resolve(process.cwd(), '..', '..', 'uploads');
+const repoRoot = path.resolve(process.cwd(), '..', '..');
+const { uploadRoot } = resolveAppPaths({ repoRoot });
+
+export const UPLOAD_ROOT = uploadRoot;
 
 export interface SavedFile {
   /** Absolute path on disk — used by Playwright `setInputFiles`. */
