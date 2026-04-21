@@ -33,3 +33,6 @@ coverage/
 
 # Pre-staged installer resources (built by scripts/stage-resources.mjs)
 apps/desktop/.staged/
+
+# Built installers (output of electron-builder)
+apps/desktop/release/
