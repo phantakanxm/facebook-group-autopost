@@ -1,12 +1,13 @@
 import pino from 'pino';
+import path from 'node:path';
 import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { paths } from './paths.js';
 
-const LOG_DIR = resolve(process.cwd(), 'logs');
+const LOG_DIR = paths.logDir;
 mkdirSync(LOG_DIR, { recursive: true });
 
 const dateStamp = new Date().toISOString().slice(0, 10);
-const logFile = resolve(LOG_DIR, `worker-${dateStamp}.log`);
+const logFile = path.join(LOG_DIR, `worker-${dateStamp}.log`);
 
 export const logger = pino(
   { level: process.env.LOG_LEVEL ?? 'info' },

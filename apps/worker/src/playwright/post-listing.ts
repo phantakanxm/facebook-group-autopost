@@ -1,7 +1,8 @@
 import type { BrowserContext } from 'playwright';
 import type { PostResult } from '@app/shared';
-import { resolve } from 'node:path';
+import path from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { paths } from '../paths.js';
 import { SELECTORS, firstMatch, propertyTypeOption, shareGroupCheckboxByName } from './selectors.js';
 import { humanClick, humanScroll } from './human.js';
 import {
@@ -29,9 +30,9 @@ export interface ListingBatchInput {
 }
 
 function screenshotPath(tag: string): string {
-  const dir = resolve(process.cwd(), 'logs', 'screenshots');
+  const dir = path.join(paths.logDir, 'screenshots');
   mkdirSync(dir, { recursive: true });
-  return resolve(dir, `listing-${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`);
+  return path.join(dir, `listing-${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`);
 }
 
 export async function postListingBatch(

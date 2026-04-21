@@ -1,8 +1,9 @@
 import { chromium as playwrightExtraChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { BrowserContext } from 'playwright';
-import { resolve } from 'node:path';
+import path from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { paths } from '../paths.js';
 
 playwrightExtraChromium.use(StealthPlugin());
 
@@ -15,7 +16,7 @@ export interface LaunchOptions {
 }
 
 export async function launchBrowser(opts: LaunchOptions): Promise<BrowserContext> {
-  const sessionDir = resolve(process.cwd(), 'sessions', opts.userId);
+  const sessionDir = path.join(paths.sessionRoot, opts.userId);
   mkdirSync(sessionDir, { recursive: true });
 
   const context = await playwrightExtraChromium.launchPersistentContext(sessionDir, {
@@ -34,5 +35,5 @@ export async function launchBrowser(opts: LaunchOptions): Promise<BrowserContext
 }
 
 export function sessionDirFor(userId: string): string {
-  return resolve(process.cwd(), 'sessions', userId);
+  return path.join(paths.sessionRoot, userId);
 }
