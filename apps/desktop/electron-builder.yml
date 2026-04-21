@@ -24,7 +24,10 @@ extraResources:
       - "!**/tests/**"
   - from: ../../apps/worker/ms-playwright
     to: app-worker/ms-playwright
-    filter: ["**/*"]
+    filter:
+      - "**/*"
+      # We use headed Chromium for FB anti-detection; headless_shell is dead weight (~150MB)
+      - "!chromium_headless_shell-*/**/*"
   - from: ../../packages/db/prisma
     to: app-db/prisma
   - from: ../../packages/db/dist
