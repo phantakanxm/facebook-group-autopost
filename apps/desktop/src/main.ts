@@ -4,6 +4,7 @@ import { getDesktopPaths, toDatabaseUrl } from './paths';
 import { findFreePort } from './port';
 import { buildEnv, spawnWeb, spawnWorker, waitForHttp, killAll, Sidecar } from './sidecars';
 import { runMigrations } from './migrate';
+import { runSeed } from './seed';
 
 // Dev: repo root is 3 dirs above apps/desktop/dist/main.js.
 // Packaged builds will override repoRoot in a later task.
@@ -15,6 +16,7 @@ async function boot(): Promise<void> {
   const paths = getDesktopPaths();
   const databaseUrl = toDatabaseUrl(paths.dbPath);
   await runMigrations({ repoRoot, databaseUrl });
+  await runSeed({ repoRoot, databaseUrl });
   const webPort = await findFreePort();
   const env = buildEnv({
     appDataDir: paths.appDataDir,
