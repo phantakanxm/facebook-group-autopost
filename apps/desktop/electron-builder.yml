@@ -23,6 +23,10 @@ mac:
   target:
     - target: dmg
       arch: [arm64]
+    # zip target is REQUIRED by electron-updater on Mac.
+    # latest-mac.yml will reference the .zip for differential downloads.
+    - target: zip
+      arch: [arm64]
   category: public.app-category.productivity
   icon: assets/icon.png
 
