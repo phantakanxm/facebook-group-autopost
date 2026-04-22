@@ -51,10 +51,16 @@ export function spawnWeb(
   return { name: 'web', proc };
 }
 
+export interface SpawnWorkerOpts {
+  packaged: boolean;
+  /** Called when worker emits a __NOTIFY__<json> line on stdout. */
+  onNotify?: (payload: { title: string; body: string }) => void;
+}
+
 export function spawnWorker(
   workerRoot: string,
   env: NodeJS.ProcessEnv,
-  _opts: { packaged: boolean }
+  opts: SpawnWorkerOpts
 ): Sidecar {
   const cwd = workerRoot;
   const proc = spawn(process.execPath, ['dist/main.js'], {
@@ -62,7 +68,29 @@ export function spawnWorker(
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  proc.stdout?.on('data', (d) => process.stdout.write(`[worker] ${d}`));
+
+  // Line-buffered stdout parser: most chunks end on \n, but console output can
+  // split across chunks on slow terminals. Keep a pending remainder.
+  let pending = '';
+  proc.stdout?.on('data', (d: Buffer) => {
+    const text = pending + d.toString('utf8');
+    const lines = text.split('\n');
+    pending = lines.pop() ?? '';
+    for (const line of lines) {
+      if (line.startsWith('__NOTIFY__')) {
+        try {
+          const payload = JSON.parse(line.slice('__NOTIFY__'.length));
+          if (typeof payload?.title === 'string' && typeof payload?.body === 'string') {
+            opts.onNotify?.({ title: payload.title, body: payload.body });
+          }
+        } catch {
+          // malformed — ignore
+        }
+      } else {
+        process.stdout.write(`[worker] ${line}\n`);
+      }
+    }
+  });
   proc.stderr?.on('data', (d) => process.stderr.write(`[worker] ${d}`));
   return { name: 'worker', proc };
 }

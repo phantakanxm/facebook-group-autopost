@@ -3,6 +3,14 @@ import type { PostResult } from '@app/shared';
 import { humanDelay } from '../utils/delays.js';
 import { cleanGroupName } from '../groups/groupName.js';
 import { logger } from '../logger.js';
+import { notifyDesktop } from '../notify.js';
+
+// Extract the list of share-group names Playwright couldn't find from the
+// PostResult.note field (format: "partial_share:name1,name2").
+function parseMissingShareNames(note: string | undefined): Set<string> {
+  if (!note || !note.startsWith('partial_share:')) return new Set();
+  return new Set(note.slice('partial_share:'.length).split(',').map((s) => s.trim()).filter(Boolean));
+}
 
 export interface CampaignContext {
   postToGroup(input: unknown): Promise<PostResult>;
@@ -110,7 +118,24 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
     return;
   }
 
-  // 3. Open browser context and post
+  // 3. Open browser context and post. Before the actual FB call, materialize
+  //    one PostLog row per group in the batch so the Activity / Batch / Dashboard
+  //    views have something to show — status will be updated based on result.
+  const postLogs = await Promise.all(
+    batch.groups.map((bg) =>
+      prisma.postLog.create({
+        data: {
+          campaignId: campaign.id,
+          groupId: bg.groupId,
+          attempt: batch.attempt + 1,
+          status: 'pending',
+          startedAt: new Date(),
+        },
+      }),
+    ),
+  );
+  const postLogByGroupId = new Map(postLogs.map((pl, i) => [batch.groups[i]!.groupId, pl]));
+
   const ctx = await adapter.openCampaign(campaign.userId);
   let result: PostResult;
   try {
@@ -148,25 +173,67 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
         ...(result.note !== undefined ? { note: result.note } : {}),
       },
     });
+
+    // Finalize per-group PostLogs: primary + successfully-shared groups → success.
+    // Share groups Playwright couldn't find (partial_share note) → skipped.
+    const missing = parseMissingShareNames(result.note);
+    const now = new Date();
+    let successCount = 0;
+    let skippedCount = 0;
+    for (const bg of batch.groups) {
+      const pl = postLogByGroupId.get(bg.groupId)!;
+      const groupDisplayName = cleanGroupName(bg.group.name ?? bg.group.fbGroupId) || bg.group.fbGroupId;
+      const wasMissing = !bg.isPrimary && missing.has(groupDisplayName);
+      if (wasMissing) skippedCount++;
+      else successCount++;
+      await prisma.postLog.update({
+        where: { id: pl.id },
+        data: {
+          status: wasMissing ? 'skipped' : 'success',
+          note: wasMissing ? 'group_not_found_in_share_list' : null,
+          fbPostUrl: wasMissing ? null : (result.fbPostUrl ?? null),
+          completedAt: now,
+        },
+      });
+    }
+
     // Update lastPosted for each group in batch
     for (const bg of batch.groups) {
       await prisma.group.update({ where: { id: bg.groupId }, data: { lastPosted: new Date() } });
     }
     await finalizeCampaignIfDone(prisma, campaign.id);
+
+    // Surface native OS notification
+    const title = campaign.title || 'Campaign';
+    const body =
+      skippedCount > 0
+        ? `โพสต์สำเร็จ ${successCount} กลุ่ม (ข้าม ${skippedCount} กลุ่มที่หาไม่เจอ)`
+        : `โพสต์สำเร็จ ${successCount} กลุ่ม`;
+    notifyDesktop(title, body);
+
     log.info('batch completed');
     return;
   }
 
   // Critical failure → pause campaign
   if (result.errorCategory && CRITICAL_CATEGORIES.has(result.errorCategory)) {
+    const errMsg = `${result.errorCategory}: ${result.error ?? ''}`;
     await prisma.listingBatch.update({
       where: { id: batchId },
-      data: { status: 'failed', lastError: `${result.errorCategory}: ${result.error ?? ''}` },
+      data: { status: 'failed', lastError: errMsg },
     });
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: { status: 'paused', lastError: `${result.errorCategory}` },
     });
+    await prisma.postLog.updateMany({
+      where: { id: { in: postLogs.map((p) => p.id) } },
+      data: { status: 'failed', error: errMsg, completedAt: new Date() },
+    });
+    notifyDesktop(
+      campaign.title || 'Campaign',
+      `หยุดชั่วคราว — ${result.errorCategory}`,
+    );
     log.warn({ category: result.errorCategory }, 'critical failure — paused');
     return;
   }
@@ -178,13 +245,24 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
     const delayMax = 10 * 60_000;
     const retryDelay = delayMin + Math.floor(Math.random() * (delayMax - delayMin));
     const nextAt = fastMode ? new Date() : new Date(Date.now() + retryDelay);
+    const errMsg = `${result.errorCategory ?? 'transient'}: ${result.error ?? ''}`;
     await prisma.listingBatch.update({
       where: { id: batchId },
       data: {
         status: 'scheduled',
         attempt: nextAttempt,
         scheduledAt: nextAt,
-        lastError: `${result.errorCategory ?? 'transient'}: ${result.error ?? ''}`,
+        lastError: errMsg,
+      },
+    });
+    // Mark this attempt's PostLogs as failed — a fresh set will be created on
+    // the retry run. This keeps the Activity view showing the real history.
+    await prisma.postLog.updateMany({
+      where: { id: { in: postLogs.map((p) => p.id) } },
+      data: {
+        status: 'failed',
+        error: `transient_will_retry: ${errMsg}`,
+        completedAt: new Date(),
       },
     });
     log.warn({ attempt: nextAttempt, retryDelayMs: retryDelay }, 'batch retry scheduled');
@@ -193,13 +271,22 @@ export async function runListingBatch(input: RunListingBatchInput): Promise<void
   }
 
   // Out of retries → skip
+  const finalErrMsg = `max_retries_exceeded: ${result.errorCategory ?? 'transient'}: ${result.error ?? ''}`;
   await prisma.listingBatch.update({
     where: { id: batchId },
     data: {
       status: 'skipped',
-      lastError: `max_retries_exceeded: ${result.errorCategory ?? 'transient'}: ${result.error ?? ''}`,
+      lastError: finalErrMsg,
     },
   });
+  await prisma.postLog.updateMany({
+    where: { id: { in: postLogs.map((p) => p.id) } },
+    data: { status: 'skipped', error: finalErrMsg, completedAt: new Date() },
+  });
   await finalizeCampaignIfDone(prisma, campaign.id);
+  notifyDesktop(
+    campaign.title || 'Campaign',
+    `ข้ามหลังพยายามครบ — ${result.errorCategory ?? 'transient'}`,
+  );
   log.warn('batch skipped after max retries');
 }

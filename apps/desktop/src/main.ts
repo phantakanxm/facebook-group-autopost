@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, Notification, dialog, shell } from 'electron';
 import path from 'node:path';
 import { getDesktopPaths, toDatabaseUrl } from './paths';
 import { findFreePort } from './port';
@@ -53,7 +53,14 @@ async function boot(): Promise<void> {
   }
 
   const web = spawnWeb(layout.webRoot, env, { packaged });
-  const worker = spawnWorker(layout.workerRoot, env, { packaged });
+  const worker = spawnWorker(layout.workerRoot, env, {
+    packaged,
+    onNotify: ({ title, body }) => {
+      if (Notification.isSupported()) {
+        new Notification({ title, body }).show();
+      }
+    },
+  });
   sidecars = [web, worker];
 
   const url = `http://127.0.0.1:${webPort}/`;
