@@ -707,15 +707,32 @@
         </li>
         <li class="install-step">
           <div class="install-step-body">
-            <h4 class="install-step-title">คลิกขวา → Open ที่ไอคอนในครั้งแรก</h4>
-            <p class="install-step-detail">macOS จะเตือน "unidentified developer" — กด <strong>Open</strong> ใน dialog ถัดไป ครั้งหลังจากนี้เปิดได้ปกติโดยไม่เตือน</p>
+            <h4 class="install-step-title">ลบ quarantine attribute ก่อนเปิด (ครั้งแรกเท่านั้น)</h4>
+            <p class="install-step-detail">
+              เปิด Terminal แล้วรันคำสั่ง:
+              <br/>
+              <code>xattr -cr "/Applications/FB Group Autopost.app"</code>
+              <br/>
+              macOS จะใส่ <code>com.apple.quarantine</code> ให้ทุกไฟล์ที่โหลดจาก internet — คำสั่งนี้ลบออก เปิดแอปได้ปกติ
+            </p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดับเบิลคลิกเปิด</h4>
+            <p class="install-step-detail">เปิดจาก Applications → ใช้งานได้ทันที ครั้งต่อไปเปิดได้ปกติโดยไม่ต้องทำอะไรเพิ่ม</p>
           </div>
         </li>
       </ol>
       <div class="callout">
         <span class="callout-mark">¶</span>
         <div>
-          <strong>ทำไมต้อง right-click?</strong> เพราะ Apple ยังไม่ได้ลงชื่อรับรอง (Developer ID) ให้แอปนี้ — ลายเซ็นดิจิทัลต้นละ $99/ปี ซึ่งตอนนี้ยังไม่ได้ลงทุน การกด right-click → Open เป็น workaround มาตรฐานที่ปลอดภัย
+          <strong>ไม่ถนัด Terminal?</strong> มีวิธีทาง GUI ด้วย —
+          ลองเปิดแอปจนขึ้น "is damaged" → กด <strong>Cancel</strong> →
+          System Settings → <strong>Privacy &amp; Security</strong> → เลื่อนลงเจอ "FB Group Autopost was blocked" → กด <strong>Open Anyway</strong>
+          <br/><br/>
+          <strong>ทำไมต้องทำแบบนี้?</strong> แอปยังไม่ได้เซ็นใบรับรอง Apple Developer ID ($99/ปี) — macOS Sonoma+ ตรวจเข้มขึ้น
+          การลบ quarantine คือ workaround มาตรฐานและปลอดภัย
         </div>
       </div>
     </div>
