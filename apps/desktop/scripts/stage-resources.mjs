@@ -31,10 +31,25 @@ function pnpmDeploy(filter, dest) {
   // --node-linker=hoisted = flatten transitive deps to top-level node_modules,
   //                         same shape Node expects without pnpm at runtime.
   // --prod = skip devDependencies.
-  execSync(
-    `pnpm --filter ${filter} deploy --prod --node-linker=hoisted "${dest}"`,
-    { cwd: repoRoot, stdio: 'inherit' }
-  );
+  try {
+    execSync(
+      `pnpm --filter ${filter} deploy --prod --node-linker=hoisted "${dest}"`,
+      { cwd: repoRoot, stdio: 'inherit' }
+    );
+  } catch (err) {
+    // On Windows, pnpm deploy throws EPERM when chmod-ing .bin CMD shims
+    // (e.g. pino-pretty). The actual package files are staged correctly —
+    // our runtime entrypoint is `node dist/main.js`, which doesn't need
+    // anything from .bin. Tolerate non-zero exit iff the staged output is
+    // structurally valid.
+    const pkgJson = path.join(dest, 'package.json');
+    const nodeModules = path.join(dest, 'node_modules');
+    if (fs.existsSync(pkgJson) && fs.existsSync(nodeModules)) {
+      console.warn(`[stage] pnpm deploy of ${filter} exited non-zero, but output looks valid (likely Windows .bin EPERM). Continuing.`);
+      return;
+    }
+    throw err;
+  }
 }
 
 // Resolve .prisma generated-client dir via the @prisma/client symlink. pnpm
