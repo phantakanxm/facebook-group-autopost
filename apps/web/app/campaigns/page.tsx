@@ -8,7 +8,9 @@ import { CampaignStatus } from '@/components/ui/status-pill';
 import { useT, useLocale } from '@/lib/i18n';
 
 export default function CampaignsPage() {
-  const list = trpc.campaign.list.useQuery();
+  // Refresh every 5s so a running campaign's status/group count reflects
+  // live worker progress without the user having to navigate away/back.
+  const list = trpc.campaign.list.useQuery(undefined, { refetchInterval: 5000 });
   const t = useT();
   const { locale } = useLocale();
   const loc = locale === 'th' ? 'th-TH' : 'en-GB';
@@ -84,7 +86,13 @@ export default function CampaignsPage() {
                       </span>
                     </TD>
                     <TD align="right" tabular className="pr-6">
-                      <span className="editorial-num text-lg">{c.groups.length}</span>
+                      <span className="editorial-num text-lg">
+                        {/* Listing campaigns keep targets in batches[].groups; */}
+                        {/* post campaigns use c.groups directly. */}
+                        {c.groups.length > 0
+                          ? c.groups.length
+                          : c.batches?.reduce((sum, b) => sum + (b._count?.groups ?? 0), 0) ?? 0}
+                      </span>
                     </TD>
                   </TRow>
                 );

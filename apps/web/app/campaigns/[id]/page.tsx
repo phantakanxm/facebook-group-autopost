@@ -6,7 +6,8 @@ import { use } from 'react';
 export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const c = trpc.campaign.get.useQuery({ id });
+  // Poll while campaign might still be active so batch/log statuses refresh live.
+  const c = trpc.campaign.get.useQuery({ id }, { refetchInterval: 5000 });
   const resume = trpc.campaign.resume.useMutation({ onSuccess: () => c.refetch() });
   const cancel = trpc.campaign.cancel.useMutation({ onSuccess: () => c.refetch() });
 

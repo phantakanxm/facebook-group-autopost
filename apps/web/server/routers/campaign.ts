@@ -11,7 +11,13 @@ export const campaignRouter = router({
   list: publicProcedure.query(({ ctx }) =>
     ctx.prisma.campaign.findMany({
       where: { userId: ctx.userId },
-      include: { groups: { include: { group: true } } },
+      include: {
+        groups: { include: { group: true } },
+        // Listing campaigns don't use CampaignGroup; their targets live under
+        // batches.groups. Include a cheap count so the list view can show
+        // "กลุ่ม: N" for listing campaigns too.
+        batches: { include: { _count: { select: { groups: true } } } },
+      },
       orderBy: { scheduledAt: 'desc' },
     }),
   ),

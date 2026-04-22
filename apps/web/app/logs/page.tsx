@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/ui/status-pill';
 import { useT, useLocale } from '@/lib/i18n';
 
 export default function LogsPage() {
-  const logs = trpc.log.recent.useQuery({ limit: 200 });
+  const logs = trpc.log.recent.useQuery({ limit: 200 }, { refetchInterval: 5000 });
   const t = useT();
   const { locale } = useLocale();
   const loc = locale === 'th' ? 'th-TH' : 'en-GB';

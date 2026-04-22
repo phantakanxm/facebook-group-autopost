@@ -25,7 +25,7 @@ function formatDateParts(d: Date, locale: string) {
 }
 
 export default function DashboardPage() {
-  const s = trpc.dashboard.summary.useQuery();
+  const s = trpc.dashboard.summary.useQuery(undefined, { refetchInterval: 5000 });
   const t = useT();
   const { locale } = useLocale();
   const loc = locale === 'th' ? 'th-TH' : 'en-GB';
