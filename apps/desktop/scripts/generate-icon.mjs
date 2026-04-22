@@ -32,9 +32,10 @@ const ICON_OFFSET_Y = (TILE - ICON_SIZE) / 2 - ICON_SIZE * (6.75 / 16 - 0.5);
 // Speech-bubble shape from app-shell.tsx Logo (16x16 viewBox), scaled to
 // ICON_SIZE. The path uses M2 3h12v7.5l-3.5-2.5H2V3Z + stroke line at 5.5,6.
 // We render in the icon's local space (0..16) and let SVG transform handle scaling.
+// Canvas stays transparent — OS expects a rounded-square tile with
+// transparent corners so the system background shows through (no cream box).
 const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect width="1024" height="1024" fill="${ACCENT_INK}"/>
   <rect
     x="${PAD}" y="${PAD}"
     width="${TILE}" height="${TILE}"
