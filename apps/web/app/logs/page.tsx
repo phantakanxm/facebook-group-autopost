@@ -37,8 +37,8 @@ export default function LogsPage() {
                 <TH>{t('logs.th.campaign')}</TH>
                 <TH>{t('logs.th.group')}</TH>
                 <TH>{t('logs.th.result')}</TH>
-                <TH align="right">{t('logs.th.attempt')}</TH>
-                <TH className="pr-6">{t('logs.th.error')}</TH>
+                <TH align="right" className="w-20 pr-8">{t('logs.th.attempt')}</TH>
+                <TH className="pl-2 pr-6">{t('logs.th.error')}</TH>
               </tr>
             </THead>
             <tbody>
@@ -81,10 +81,10 @@ export default function LogsPage() {
                         {l.note && ` · ${l.note}`}
                       </StatusPill>
                     </TD>
-                    <TD align="right" tabular>
+                    <TD align="right" tabular className="w-20 pr-8">
                       {l.attempt}
                     </TD>
-                    <TD className="pr-6 max-w-xs">
+                    <TD className="pl-2 pr-6 max-w-xs">
                       {l.error ? (
                         <span className="truncate font-mono text-2xs text-[var(--danger)]">
                           {l.error}
