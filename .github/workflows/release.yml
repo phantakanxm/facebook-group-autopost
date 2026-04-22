@@ -45,7 +45,9 @@ jobs:
       - name: Install Playwright Chromium (bundled path)
         shell: bash
         env:
-          PLAYWRIGHT_BROWSERS_PATH: ./apps/worker/ms-playwright
+          # Absolute path so `pnpm -F worker exec` (which cd's into apps/worker)
+          # doesn't resolve this relative and end up with apps/worker/apps/worker/...
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/apps/worker/ms-playwright
         run: pnpm -F worker exec playwright install chromium
 
       - name: Stage resources for electron-builder
