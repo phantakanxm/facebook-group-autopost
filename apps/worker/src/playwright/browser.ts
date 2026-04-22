@@ -2,7 +2,7 @@ import { chromium as playwrightExtraChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { BrowserContext } from 'playwright';
 import path from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import { paths } from '../paths.js';
 
 playwrightExtraChromium.use(StealthPlugin());
@@ -15,9 +15,25 @@ export interface LaunchOptions {
   headless?: boolean;
 }
 
+// Chromium creates SingletonLock/SingletonCookie/SingletonSocket in the profile
+// dir to prevent multiple instances. If a previous run crashed or was force-killed
+// before close, these linger and block the next launch with:
+//   Failed to create a ProcessSingleton for your profile directory
+// We're the only Chromium touching this profile, so it's safe to remove them.
+function clearSingletonLocks(sessionDir: string): void {
+  for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+    try {
+      rmSync(path.join(sessionDir, name), { force: true });
+    } catch {
+      // best-effort; ignore missing or permission errors
+    }
+  }
+}
+
 export async function launchBrowser(opts: LaunchOptions): Promise<BrowserContext> {
   const sessionDir = path.join(paths.sessionRoot, opts.userId);
   mkdirSync(sessionDir, { recursive: true });
+  clearSingletonLocks(sessionDir);
 
   const context = await playwrightExtraChromium.launchPersistentContext(sessionDir, {
     headless: opts.headless ?? false,
