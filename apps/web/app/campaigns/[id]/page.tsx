@@ -133,7 +133,11 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           <thead><tr className="text-left"><th>Group</th><th>Status</th><th>Attempt</th><th>Error</th><th>Time</th></tr></thead>
           <tbody>
             {d.logs.map((l) => {
-              const grp = d.groups.find((g) => g.groupId === l.groupId)?.group;
+              // Listing campaigns populate d.batches[].groups; regular campaigns use d.groups.
+              // Check both so the Group column renders for either flavor.
+              const grp =
+                d.groups.find((g) => g.groupId === l.groupId)?.group ??
+                d.batches?.flatMap((b) => b.groups).find((g) => g.groupId === l.groupId)?.group;
               return (
                 <tr key={l.id} className="border-t">
                   <td>{grp?.name ?? grp?.fbGroupId}</td>
