@@ -97,6 +97,34 @@ copy(
   }
 );
 
+// .prisma (generated Prisma client + query engine) — Node's resolution from
+// the nested @app/db/node_modules/@prisma/client walks up and needs to find
+// .prisma/client. pnpm puts it in the virtual store; our dereferenced copy
+// doesn't automatically include it. Resolve via realpathSync on @prisma/client
+// and copy its sibling .prisma into both a top-level and a nested location so
+// every nested @prisma/client can find it.
+const workerPrismaClientLink = path.join(
+  repoRoot, 'apps/worker/node_modules/@prisma/client'
+);
+let workerDotPrismaSrc = null;
+if (fs.existsSync(workerPrismaClientLink)) {
+  const realClient = fs.realpathSync(workerPrismaClientLink);
+  workerDotPrismaSrc = path.resolve(realClient, '..', '..', '.prisma');
+}
+if (workerDotPrismaSrc && fs.existsSync(workerDotPrismaSrc)) {
+  console.log(`[stage] app-worker .prisma engine from ${workerDotPrismaSrc}`);
+  // Top-level: for direct @prisma/client users
+  copy(workerDotPrismaSrc, path.join(appWorkerStaged, 'node_modules/.prisma'));
+  // Nested: for @app/db's own @prisma/client (has its own node_modules because
+  // @app/db was dereferenced as a whole package)
+  copy(
+    workerDotPrismaSrc,
+    path.join(appWorkerStaged, 'node_modules/@app/db/node_modules/.prisma')
+  );
+} else {
+  console.warn('[stage] WARNING: worker .prisma engine not found — worker will crash at runtime');
+}
+
 // ms-playwright (chromium) — copy as-is, no dereference needed (real files)
 const msPwSrc = path.join(repoRoot, 'apps/worker/ms-playwright');
 const msPwDst = path.join(appWorkerStaged, 'ms-playwright');
