@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FB Group Autopost — Dispatched like a letter, not a broadcast</title>
+<meta name="description" content="เครื่องมือส่งโพสต์เข้าหลายกลุ่มเฟซบุ๊กจากบัญชีตัวเอง ตั้งเวลา โพสต์ซ้ำ พฤติกรรมเลียนมนุษย์ — เก็บไว้ที่เครื่องตัวเอง ไม่พึ่ง SaaS" />
+<meta property="og:title" content="FB Group Autopost" />
+<meta property="og:description" content="Dispatched like a letter, not a broadcast." />
+<meta property="og:image" content="./assets/icon.png" />
+<link rel="icon" type="image/png" href="./assets/icon.png" />
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@200,300,400,500,700&f[]=switzer@300,400,500,600,700&display=swap" />
+<style>
+  /* ---------- Tokens ---------- */
+  :root {
+    /* Paper / surface (light) */
+    --paper: oklch(0.985 0.008 60);
+    --paper-shade: oklch(0.97 0.010 55);
+    --surface: oklch(0.96 0.011 55);
+    --ink: oklch(0.20 0.015 40);
+    --ink-muted: oklch(0.45 0.015 45);
+    --ink-faint: oklch(0.65 0.015 45);
+    --line: oklch(0.89 0.015 55);
+    --line-strong: oklch(0.78 0.020 55);
+
+    /* Accent: oxblood */
+    --accent: oklch(0.40 0.11 18);
+    --accent-soft: oklch(0.948 0.028 22);
+    --accent-ink: oklch(0.985 0.008 60);
+
+    /* Rhythm */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-2xl: 64px;
+    --space-3xl: 96px;
+
+    /* Type */
+    --display: 'Sentient', 'Iowan Old Style', Georgia, serif;
+    --body: 'Switzer', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* Motion */
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: oklch(0.17 0.012 30);
+      --paper-shade: oklch(0.20 0.013 30);
+      --surface: oklch(0.22 0.014 30);
+      --ink: oklch(0.95 0.010 55);
+      --ink-muted: oklch(0.72 0.012 50);
+      --ink-faint: oklch(0.55 0.012 50);
+      --line: oklch(0.30 0.013 30);
+      --line-strong: oklch(0.42 0.015 30);
+
+      --accent: oklch(0.70 0.13 20);
+      --accent-soft: oklch(0.28 0.055 20);
+      --accent-ink: oklch(0.12 0.010 30);
+    }
+  }
+
+  /* ---------- Reset + base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body {
+    margin: 0;
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--paper);
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- Typography ---------- */
+  .display {
+    font-family: var(--display);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+  }
+  .eyebrow {
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .small-caps {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Layout shell ---------- */
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-left: clamp(var(--space-lg), 5vw, var(--space-2xl));
+    padding-right: clamp(var(--space-lg), 5vw, var(--space-2xl));
+  }
+
+  /* Rule: hairline dividers */
+  .rule {
+    height: 1px;
+    background: var(--line);
+    border: 0;
+  }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in oklch, var(--paper) 85%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+  .brand-name {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  .nav-links {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+  .nav-link {
+    font-size: 14px;
+    color: var(--ink-muted);
+    transition: color 0.2s var(--ease-out-quart);
+  }
+  .nav-link:hover { color: var(--ink); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding-top: clamp(var(--space-2xl), 10vw, 128px);
+    padding-bottom: clamp(var(--space-2xl), 10vw, 128px);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+    color: var(--ink-faint);
+  }
+  .hero-eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  .hero-title {
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: clamp(40px, 7vw, 84px);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    margin: 0 0 var(--space-lg) 0;
+    max-width: 12ch;
+  }
+  .hero-title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .hero-sub {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    max-width: 52ch;
+    margin: 0 0 var(--space-2xl) 0;
+  }
+
+  /* Download panel */
+  .download-card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: clamp(var(--space-lg), 3vw, var(--space-xl));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+  .download-platform {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .download-platform-name {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .download-platform-detail {
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--body);
+    font-weight: 500;
+    font-size: 15px;
+    border: 0;
+    cursor: pointer;
+    transition: transform 0.25s var(--ease-out-quart), background 0.2s var(--ease-out-quart);
+    text-align: left;
+    width: 100%;
+    font-feature-settings: 'ss01';
+  }
+  .btn-download:hover {
+    background: color-mix(in oklch, var(--accent) 88%, black);
+    transform: translateY(-1px);
+  }
+  .btn-download:active { transform: translateY(0); }
+  .btn-download-arrow {
+    display: inline-block;
+    transition: transform 0.25s var(--ease-out-quart);
+  }
+  .btn-download:hover .btn-download-arrow { transform: translate(2px, -2px); }
+
+  .download-alt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .download-alt-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .download-alt-item:first-child { border-top: 0; }
+  .download-alt-label {
+    color: var(--ink-muted);
+  }
+  .download-alt-link {
+    color: var(--ink);
+    font-weight: 500;
+    transition: color 0.2s var(--ease-out-quart);
+  }
+  .download-alt-link:hover { color: var(--accent); }
+
+  .release-meta {
+    display: flex;
+    gap: var(--space-md);
+    font-size: 12px;
+    color: var(--ink-faint);
+    align-items: baseline;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--line);
+  }
+  .release-meta strong {
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  /* ---------- Section ---------- */
+  .section {
+    padding-top: clamp(var(--space-2xl), 8vw, var(--space-3xl));
+    padding-bottom: clamp(var(--space-2xl), 8vw, var(--space-3xl));
+    border-top: 1px solid var(--line);
+  }
+  .section-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-2xl);
+    max-width: 72ch;
+  }
+  @media (min-width: 800px) {
+    .section-head { grid-template-columns: 200px 1fr; gap: var(--space-xl); }
+  }
+  .section-kicker {
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-family: var(--display);
+    font-style: italic;
+  }
+  .section-title {
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .section-sub {
+    color: var(--ink-muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: var(--space-sm) 0 0 0;
+    max-width: 62ch;
+  }
+
+  /* ---------- Features (editorial 3-col) ---------- */
+  .features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 720px) {
+    .features {
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+    }
+  }
+  .feature {
+    padding: var(--space-xl) 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  @media (min-width: 720px) {
+    .feature {
+      padding: var(--space-xl) var(--space-lg);
+      border-right: 1px solid var(--line);
+      border-bottom: 0;
+    }
+    .feature:first-child { padding-left: 0; }
+    .feature:last-child { padding-right: 0; border-right: 0; }
+  }
+  .feature-num {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  .feature-title {
+    font-family: var(--display);
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin: 0;
+  }
+  .feature-desc {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  /* ---------- Install tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: var(--space-xl);
+  }
+  .tab {
+    background: transparent;
+    border: 0;
+    padding: 12px 20px 14px 20px;
+    cursor: pointer;
+    font-family: var(--body);
+    font-size: 14px;
+    color: var(--ink-muted);
+    position: relative;
+    transition: color 0.2s var(--ease-out-quart);
+  }
+  .tab:first-child { padding-left: 0; }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .tab[aria-selected="true"]::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent);
+  }
+  .tab:first-child[aria-selected="true"]::after { left: 0; }
+
+  .tab-panel { display: none; }
+  .tab-panel[data-active] { display: block; }
+
+  .install-steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    max-width: 72ch;
+  }
+  .install-step {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: var(--space-md);
+    align-items: start;
+  }
+  .install-step::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .install-step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .install-step-title {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+  .install-step-detail {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+  .install-step-detail code {
+    font-family: var(--mono);
+    font-size: 0.92em;
+    background: var(--paper-shade);
+    padding: 1px 6px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .callout {
+    padding: var(--space-md) var(--space-lg);
+    background: var(--paper-shade);
+    border: 1px solid var(--line);
+    margin-top: var(--space-md);
+    font-size: 14px;
+    color: var(--ink-muted);
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-start;
+    max-width: 72ch;
+  }
+  .callout-mark {
+    color: var(--accent);
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  /* ---------- Caveat ---------- */
+  .caveat {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    max-width: 72ch;
+  }
+  @media (min-width: 700px) {
+    .caveat { grid-template-columns: 200px 1fr; gap: var(--space-xl); }
+  }
+  .caveat-label {
+    font-family: var(--display);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 16px;
+  }
+  .caveat-body {
+    font-size: 15px;
+    color: var(--ink-muted);
+    line-height: 1.65;
+    margin: 0;
+  }
+  .caveat-body strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-2xl);
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer a { color: var(--ink-muted); transition: color 0.2s var(--ease-out-quart); }
+  .footer a:hover { color: var(--accent); }
+
+  /* Page load reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rise 0.8s var(--ease-out-expo) forwards;
+  }
+  .reveal.delay-1 { animation-delay: 0.08s; }
+  .reveal.delay-2 { animation-delay: 0.16s; }
+  .reveal.delay-3 { animation-delay: 0.24s; }
+  .reveal.delay-4 { animation-delay: 0.32s; }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { animation: none; opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="brand">
+      <img class="brand-mark" src="./assets/icon.png" alt="" />
+      <span class="brand-name">FB Group Autopost</span>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link" href="#install">Install</a>
+      <a class="nav-link" href="https://github.com/phantakanxm/facebook-group-autopost" target="_blank" rel="noopener">Source</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow reveal">
+          <span class="hero-eyebrow-dot"></span>
+          <span class="small-caps">A local tool for FB operators</span>
+        </div>
+        <h1 class="hero-title reveal delay-1">
+          Dispatched <em>like a letter,</em><br/>not a broadcast.
+        </h1>
+        <p class="hero-sub reveal delay-2">
+          ส่งโพสต์เข้าหลายกลุ่มเฟซบุ๊กจากบัญชีตัวเอง ตั้งเวลา โพสต์ซ้ำ
+          พฤติกรรมเลียนมนุษย์ — ทุกอย่างเก็บไว้บนเครื่องของคุณ
+          ไม่ผ่าน SaaS ไม่ผ่านเซิร์ฟเวอร์กลาง
+        </p>
+      </div>
+
+      <aside class="download-card reveal delay-3" id="download">
+        <div>
+          <span class="eyebrow">Download</span>
+          <div class="download-platform" id="platform-primary" style="margin-top: var(--space-sm);">
+            <div class="download-platform-name" id="platform-name">Detecting your OS…</div>
+            <div class="download-platform-detail" id="platform-detail">&nbsp;</div>
+          </div>
+        </div>
+
+        <a class="btn-download" href="https://github.com/phantakanxm/facebook-group-autopost/releases/latest" id="download-primary" target="_blank" rel="noopener">
+          <span id="download-primary-label">Download</span>
+          <span class="btn-download-arrow">↗</span>
+        </a>
+
+        <div>
+          <span class="small-caps">Other platforms</span>
+          <ul class="download-alt-list" id="download-alt" style="margin-top: var(--space-sm);">
+            <li class="download-alt-item">
+              <span class="download-alt-label">Loading release…</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="release-meta">
+          <span><strong>Version:</strong> <span id="release-version">—</span></span>
+          <span><strong>Released:</strong> <span id="release-date">—</span></span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</header>
+
+<!-- Features -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-kicker">No. 01 — What it does</span>
+      <div>
+        <h2 class="section-title">A quiet workshop for the marketer who already lives inside Facebook groups.</h2>
+        <p class="section-sub">ไม่ใช่ bot ที่แกล้งเป็นคนอื่น — มันคือมือที่ยาวกว่าของคุณ ที่จำเวลาและจำกลุ่มได้</p>
+      </div>
+    </div>
+    <div class="features">
+      <article class="feature">
+        <span class="feature-num">01</span>
+        <h3 class="feature-title">Post to groups you already belong to</h3>
+        <p class="feature-desc">ไม่ต้องสร้างบัญชีใหม่ ไม่ต้องสมัคร API โพสต์ไปยังกลุ่มที่คุณเป็นสมาชิกอยู่แล้ว ผ่าน browser เดียวกับที่คุณใช้เปิดเฟซบุ๊กจริง</p>
+      </article>
+      <article class="feature">
+        <span class="feature-num">02</span>
+        <h3 class="feature-title">Schedule like a calendar, not a queue</h3>
+        <p class="feature-desc">ตั้งเวลาโพสต์ครั้งเดียว หรือ recurring (cron) พร้อม jitter — worker หลังบ้านโพสต์ให้เองพร้อมดีเลย์แบบมนุษย์ระหว่างกลุ่ม</p>
+      </article>
+      <article class="feature">
+        <span class="feature-num">03</span>
+        <h3 class="feature-title">Your account, your cookies, your machine</h3>
+        <p class="feature-desc">Session cookies เก็บไว้ที่เครื่องคุณเอง ไม่ส่งขึ้น cloud ไม่มีเซิร์ฟเวอร์กลางเห็น ถ้าปิดเครื่อง ระบบก็หยุด คุณควบคุม 100%</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Install -->
+<section class="section" id="install">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-kicker">No. 02 — Install</span>
+      <div>
+        <h2 class="section-title">Three steps, about ninety seconds.</h2>
+        <p class="section-sub">เนื่องจากแอปยังไม่ได้เซ็นใบรับรอง (unsigned) ระบบปฏิบัติการจะเตือนครั้งแรก — นี่คือเรื่องปกติ กดผ่านได้ปลอดภัย</p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="mac">macOS</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="win">Windows</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="linux">Linux</button>
+    </div>
+
+    <!-- macOS -->
+    <div class="tab-panel" data-tab="mac" data-active>
+      <ol class="install-steps">
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดาวน์โหลด <code>.dmg</code> สำหรับ Mac (Apple Silicon)</h4>
+            <p class="install-step-detail">กดปุ่ม Download ด้านบน — ไฟล์จะถูกบันทึกลง Downloads โดยอัตโนมัติ ขนาดประมาณ 280 MB</p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ลาก FB Group Autopost เข้า Applications</h4>
+            <p class="install-step-detail">เปิด <code>.dmg</code> ไฟล์ที่ดาวน์โหลดมา — หน้าต่างจะโผล่ขึ้นให้ลากไอคอนเข้าโฟลเดอร์ Applications</p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">คลิกขวา → Open ที่ไอคอนในครั้งแรก</h4>
+            <p class="install-step-detail">macOS จะเตือน "unidentified developer" — กด <strong>Open</strong> ใน dialog ถัดไป ครั้งหลังจากนี้เปิดได้ปกติโดยไม่เตือน</p>
+          </div>
+        </li>
+      </ol>
+      <div class="callout">
+        <span class="callout-mark">¶</span>
+        <div>
+          <strong>ทำไมต้อง right-click?</strong> เพราะ Apple ยังไม่ได้ลงชื่อรับรอง (Developer ID) ให้แอปนี้ — ลายเซ็นดิจิทัลต้นละ $99/ปี ซึ่งตอนนี้ยังไม่ได้ลงทุน การกด right-click → Open เป็น workaround มาตรฐานที่ปลอดภัย
+        </div>
+      </div>
+    </div>
+
+    <!-- Windows -->
+    <div class="tab-panel" data-tab="win">
+      <ol class="install-steps">
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดาวน์โหลด installer <code>.exe</code></h4>
+            <p class="install-step-detail">เลือก "Windows (.exe)" จากลิสต์ Other platforms — ไฟล์ประมาณ 300 MB</p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดับเบิลคลิกเพื่อติดตั้ง</h4>
+            <p class="install-step-detail">SmartScreen อาจเตือน "Windows protected your PC" — กด <strong>More info → Run anyway</strong></p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">เปิด FB Group Autopost จาก Start Menu</h4>
+            <p class="install-step-detail">ติดตั้งอัตโนมัติ ไม่ต้อง admin — ข้อมูลเก็บใน <code>%APPDATA%\FB Group Autopost\</code></p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Linux -->
+    <div class="tab-panel" data-tab="linux">
+      <ol class="install-steps">
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดาวน์โหลด <code>.AppImage</code></h4>
+            <p class="install-step-detail">เลือก "Linux (.AppImage)" — ไฟล์ประมาณ 300 MB พกพาได้ไม่ต้อง install</p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ทำให้ execute ได้</h4>
+            <p class="install-step-detail">เปิด Terminal: <code>chmod +x FB-Group-Autopost-*.AppImage</code></p>
+          </div>
+        </li>
+        <li class="install-step">
+          <div class="install-step-body">
+            <h4 class="install-step-title">ดับเบิลคลิกเปิด</h4>
+            <p class="install-step-detail">หน้าต่างแอปจะเด้งขึ้น — ข้อมูลเก็บใน <code>~/.config/FB Group Autopost/</code></p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- Caveat -->
+<section class="section">
+  <div class="container">
+    <div class="caveat">
+      <span class="caveat-label">A word<br/>of honesty</span>
+      <p class="caveat-body">
+        <strong>เครื่องมือนี้ขัดกับ Terms of Service ของ Facebook.</strong>
+        การ automate browser action ไปยังกลุ่มหลาย ๆ กลุ่มอาจทำให้บัญชีโดนจำกัดหรือระงับ
+        ระบบมีการเลียน behavior แบบมนุษย์และจำกัด campaign ขนาดเล็ก แต่ความเสี่ยงยังมีอยู่จริง
+        <br/><br/>
+        ใช้ด้วยวิจารณญาณ อย่าใช้กับบัญชีหลักที่คุณเสียดาย อย่าโพสต์ spam ที่กลุ่มจริงๆ ไม่ต้องการ
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© 2026 · Open source</span>
+    <span>
+      <a href="https://github.com/phantakanxm/facebook-group-autopost" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/phantakanxm/facebook-group-autopost/releases" target="_blank" rel="noopener">Releases</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/phantakanxm/facebook-group-autopost/issues" target="_blank" rel="noopener">Issues</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+// ---------- OS detection ----------
+(function() {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isMac = /Mac/i.test(platform) || /Mac OS X/i.test(ua);
+  const isWin = /Win/i.test(platform);
+  const isLinux = /Linux/i.test(platform) && !/Android/i.test(ua);
+
+  let detected = 'mac';
+  if (isWin) detected = 'win';
+  else if (isLinux) detected = 'linux';
+
+  // Wait for release info, then populate
+  fetchReleaseInfo().then((release) => {
+    renderDownloads(release, detected);
+    selectTab(detected);
+  }).catch(() => {
+    renderDownloads(null, detected);
+    selectTab(detected);
+  });
+})();
+
+async function fetchReleaseInfo() {
+  const res = await fetch('https://api.github.com/repos/phantakanxm/facebook-group-autopost/releases/latest');
+  if (!res.ok) throw new Error('api failed');
+  return await res.json();
+}
+
+function assetsByPattern(assets) {
+  if (!assets) return {};
+  const findBy = (re) => assets.find((a) => re.test(a.name));
+  return {
+    mac: findBy(/\.dmg$/i),
+    win: findBy(/Setup-.*\.exe$/i) ?? findBy(/\.exe$/i),
+    linux: findBy(/\.AppImage$/i),
+  };
+}
+
+const FALLBACK_URLS = {
+  mac: 'https://github.com/phantakanxm/facebook-group-autopost/releases/latest',
+  win: 'https://github.com/phantakanxm/facebook-group-autopost/releases/latest',
+  linux: 'https://github.com/phantakanxm/facebook-group-autopost/releases/latest',
+};
+
+const PLATFORM_META = {
+  mac: { name: 'macOS (Apple Silicon)', detail: '.dmg · Intel users: use the universal release soon', label: 'Download for Mac' },
+  win: { name: 'Windows 10 / 11', detail: '.exe installer · 64-bit', label: 'Download for Windows' },
+  linux: { name: 'Linux', detail: '.AppImage · x64', label: 'Download for Linux' },
+};
+
+function renderDownloads(release, detected) {
+  const assets = assetsByPattern(release ? release.assets : null);
+  const meta = PLATFORM_META[detected];
+
+  // Primary
+  const primaryAsset = assets[detected];
+  document.getElementById('platform-name').textContent = meta.name;
+  document.getElementById('platform-detail').textContent = meta.detail;
+  document.getElementById('download-primary-label').textContent = meta.label;
+  const primaryLink = document.getElementById('download-primary');
+  if (primaryAsset) {
+    primaryLink.href = primaryAsset.browser_download_url;
+  } else {
+    primaryLink.href = FALLBACK_URLS[detected];
+  }
+
+  // Alternates (other two)
+  const altList = document.getElementById('download-alt');
+  altList.innerHTML = '';
+  const others = ['mac', 'win', 'linux'].filter((k) => k !== detected);
+  for (const key of others) {
+    const asset = assets[key];
+    const m = PLATFORM_META[key];
+    const li = document.createElement('li');
+    li.className = 'download-alt-item';
+    const href = asset ? asset.browser_download_url : FALLBACK_URLS[key];
+    li.innerHTML = '<span class="download-alt-label">' + m.name + '</span>' +
+      '<a class="download-alt-link" href="' + href + '" target="_blank" rel="noopener">Download ↗</a>';
+    altList.appendChild(li);
+  }
+
+  // Release meta
+  if (release) {
+    document.getElementById('release-version').textContent = release.tag_name || '—';
+    const d = new Date(release.published_at);
+    const now = new Date();
+    const diffDays = Math.round((now - d) / (1000 * 60 * 60 * 24));
+    let when;
+    if (diffDays === 0) when = 'today';
+    else if (diffDays === 1) when = 'yesterday';
+    else if (diffDays < 7) when = diffDays + ' days ago';
+    else when = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    document.getElementById('release-date').textContent = when;
+  } else {
+    document.getElementById('release-version').textContent = 'latest';
+    document.getElementById('release-date').textContent = 'see GitHub';
+  }
+}
+
+// ---------- Tabs ----------
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach((t) => {
+  t.addEventListener('click', () => selectTab(t.dataset.tab));
+});
+
+function selectTab(name) {
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.setAttribute('aria-selected', String(t.dataset.tab === name));
+  });
+  document.querySelectorAll('.tab-panel').forEach((p) => {
+    if (p.dataset.tab === name) p.setAttribute('data-active', '');
+    else p.removeAttribute('data-active');
+  });
+}
+</script>
+
+</body>
+</html>
