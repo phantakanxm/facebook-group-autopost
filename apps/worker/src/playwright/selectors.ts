@@ -5,10 +5,20 @@
 // Keep this file the single source of truth; update when FB changes UI.
 
 export const SELECTORS = {
-  // Composer entry point in a group feed ("เขียนอะไรบางอย่าง..." / "Write something...")
+  // Composer entry point in a group feed. Thai FB cycles through several
+  // placeholders depending on the group / rollout:
+  //   "เขียนบางสิ่งบางอย่าง..."
+  //   "เขียนอะไรบางอย่าง..."
+  //   "คุณกำลังคิดอะไรอยู่..." (news-feed style, sometimes appears in groups)
+  //   "สร้างโพสต์..."
+  //   "เขียนโพสต์..."
+  //   "เริ่มการสนทนา..."
+  // English: "Write something...", "Create a post...", "What's on your mind..."
   composerOpen: [
-    'role=button[name=/เขียนบางสิ่งบางอย่าง|เขียนอะไรบางอย่าง|Write something/i]',
-    'role=textbox[name=/เขียน|Write/i]',
+    'role=button[name=/เขียน(บางสิ่ง|อะไร|โพสต์)|คิดอะไร|สร้างโพสต์|เริ่มการสนทนา|Write something|Create (a )?post|What.?s on your mind/i]',
+    'role=textbox[name=/เขียน|คิดอะไร|สร้างโพสต์|Write|post|mind/i]',
+    // Last-ditch: any role=button at the top of the group feed that opens a composer dialog
+    'role=button[name=/^\\s*(เขียน|โพสต์|Post|Write)\\s*\\.?\\.?\\.?\\s*$/i]',
   ],
   // The actual composer editable area
   composerEditable: '[contenteditable="true"][role="textbox"]',
@@ -30,9 +40,14 @@ export const SELECTORS = {
     '[role="dialog"] input[type="file"][accept*="video"]',
     'input[type="file"][accept*="video/"]',
   ],
-  // Final submit button
+  // Final submit button. Strict-anchored variants first to avoid catching
+  // "Post listing" or "Post photo" cards; then loosen.
   submitPost: [
-    'role=button[name=/^โพสต์$|^Post$/i]',
+    'role=button[name=/^\\s*(โพสต์|โพสต์เลย|เผยแพร่|แชร์โพสต์|Post|Publish|Share post)\\s*$/i]',
+    '[role="dialog"] role=button[name=/^\\s*(โพสต์|Post|Publish)\\s*$/i]',
+    // Last-ditch: any prominent button inside the composer dialog whose name
+    // STARTS with โพสต์/Post (covers icon-suffixed labels FB sometimes ships).
+    '[role="dialog"] role=button[name=/^(โพสต์|Post)\\b/i]',
   ],
   // "Sell Something" entry point — indicates the group supports Marketplace listings.
   // Confirmed Thai labels (2026): "ขายสินค้า" (most common), "ประกาศขาย",
