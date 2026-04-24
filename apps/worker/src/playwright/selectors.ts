@@ -35,26 +35,30 @@ export const SELECTORS = {
     'role=button[name=/^โพสต์$|^Post$/i]',
   ],
   // "Sell Something" entry point — indicates the group supports Marketplace listings.
-  // Thai FB has multiple labels depending on rollout: "ประกาศขาย", "ขายของ",
-  // "ขายอะไรบางอย่าง", "ลงประกาศขาย", "เริ่มขาย", or just "ขาย" with surrounding
-  // context. Match liberally across all of these.
+  // Confirmed Thai labels (2026): "ขายสินค้า" (most common), "ประกาศขาย",
+  // "ลงประกาศขาย", "ขายของ", "ขายอะไรบางอย่าง", "เริ่มขาย", "ขายในกลุ่ม".
   listingButton: [
-    'role=button[name=/ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale|List something for sale/i]',
-    'role=link[name=/ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale/i]',
+    'role=button[name=/ขายสินค้า|ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale|List something for sale/i]',
+    'role=link[name=/ขายสินค้า|ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale/i]',
   ],
-  // Listing form modal — category chooser. Thai variants include
-  // "อสังหาริมทรัพย์ขายหรือให้เช่า", "ขายหรือเช่าอสังหา", "ที่อยู่อาศัยขายหรือเช่า".
+  // Listing form modal — category chooser. Confirmed Thai (2026):
+  // "บ้านสำหรับขายหรือเช่า". Older/other variants:
+  // "อสังหาริมทรัพย์ขายหรือให้เช่า", "ขายหรือเช่าอสังหา", "ที่อยู่อาศัยขาย/เช่า".
+  // The umbrella regex matches "บ้าน|อสังหา|ที่อยู่อาศัย" + ANY arrangement of
+  // ขาย/เช่า separated by /, |, "หรือ", or whitespace.
   listingCategoryPropertyForSaleOrRent: [
-    'role=button[name=/(อสังหา.*?(ขาย|เช่า))|((ขาย|เช่า).*?อสังหา)|ที่อยู่อาศัย.*?(ขาย|เช่า)|Property for sale or rent/i]',
-    'role=link[name=/(อสังหา.*?(ขาย|เช่า))|((ขาย|เช่า).*?อสังหา)|ที่อยู่อาศัย.*?(ขาย|เช่า)|Property for sale or rent/i]',
+    'role=button[name=/(บ้าน|อสังหา|ที่อยู่อาศัย).*?(ขาย|เช่า)|((ขาย|เช่า).*?(บ้าน|อสังหา|ที่อยู่อาศัย))|Property for sale or rent/i]',
+    'role=link[name=/(บ้าน|อสังหา|ที่อยู่อาศัย).*?(ขาย|เช่า)|((ขาย|เช่า).*?(บ้าน|อสังหา|ที่อยู่อาศัย))|Property for sale or rent/i]',
   ],
   // Comboboxes (click to open, then pick role=option)
   // Scoped to the dialog AND role=combobox specifically — the category chooser has
   // clickable "role=button" cards with the same name, which would false-match here.
+  // Confirmed: "บ้านสำหรับขายหรือเช่า" is the actual combobox label too.
   listingKindCombobox: [
     '[role="dialog"] [role="combobox"][aria-label*="sale or rent" i]',
+    '[role="dialog"] [role="combobox"][aria-label*="ขายหรือเช่า"]',
     '[role="dialog"] [role="combobox"][aria-label*="ขาย" i]',
-    'role=combobox[name=/Property for sale or rent|ขาย.?\\/?.?เช่า/i]',
+    'role=combobox[name=/Property for sale or rent|(บ้าน|อสังหา|ที่อยู่อาศัย).*?(ขาย|เช่า)/i]',
   ],
   listingKindOptionSale: [
     'role=option[name=/^\\s*(For sale|Sale|ขาย|สำหรับขาย)\\s*$/i]',
@@ -101,9 +105,9 @@ export const SELECTORS = {
     '[role="dialog"] input[type="search"]',
   ],
   listingLocationFirstOption: '[role="listbox"] >> role=option >> nth=0',
-  // Description textbox
+  // Description textbox. Confirmed Thai: "คำอธิบายอสังหาริมทรัพย์".
   listingDescriptionTextbox: [
-    'role=textbox[name=/Property description|รายละเอียด|Description/i]',
+    'role=textbox[name=/Property description|คำอธิบาย|รายละเอียด|Description/i]',
     '[role="dialog"] textarea',
   ],
   // Step navigation + submit
