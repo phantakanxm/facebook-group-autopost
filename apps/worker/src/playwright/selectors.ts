@@ -34,15 +34,19 @@ export const SELECTORS = {
   submitPost: [
     'role=button[name=/^โพสต์$|^Post$/i]',
   ],
-  // "Sell Something" entry point — indicates the group supports Marketplace listings
+  // "Sell Something" entry point — indicates the group supports Marketplace listings.
+  // Thai FB has multiple labels depending on rollout: "ประกาศขาย", "ขายของ",
+  // "ขายอะไรบางอย่าง", "ลงประกาศขาย", "เริ่มขาย", or just "ขาย" with surrounding
+  // context. Match liberally across all of these.
   listingButton: [
-    'role=button[name=/ประกาศขาย|Sell Something|Sell something|List for Sale|List something for sale/i]',
-    'role=link[name=/ประกาศขาย|Sell Something|Sell something|List for Sale/i]',
+    'role=button[name=/ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale|List something for sale/i]',
+    'role=link[name=/ประกาศขาย|ลงประกาศขาย|ขายของ|ขายอะไร|เริ่มขาย|ขายในกลุ่ม|Sell Something|Sell something|List for Sale/i]',
   ],
-  // Listing form modal — category chooser
+  // Listing form modal — category chooser. Thai variants include
+  // "อสังหาริมทรัพย์ขายหรือให้เช่า", "ขายหรือเช่าอสังหา", "ที่อยู่อาศัยขายหรือเช่า".
   listingCategoryPropertyForSaleOrRent: [
-    'role=button[name=/ขาย.?\\/?.?เช่า.?อสังหา|Property for sale or rent/i]',
-    'role=link[name=/ขาย.?\\/?.?เช่า.?อสังหา|Property for sale or rent/i]',
+    'role=button[name=/(อสังหา.*?(ขาย|เช่า))|((ขาย|เช่า).*?อสังหา)|ที่อยู่อาศัย.*?(ขาย|เช่า)|Property for sale or rent/i]',
+    'role=link[name=/(อสังหา.*?(ขาย|เช่า))|((ขาย|เช่า).*?อสังหา)|ที่อยู่อาศัย.*?(ขาย|เช่า)|Property for sale or rent/i]',
   ],
   // Comboboxes (click to open, then pick role=option)
   // Scoped to the dialog AND role=combobox specifically — the category chooser has
