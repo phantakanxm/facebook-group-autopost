@@ -8,9 +8,10 @@ import { useT, useLocale } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 
 export default function SessionPage() {
-  const status = trpc.session.status.useQuery();
+  const status = trpc.session.status.useQuery(undefined, { refetchInterval: 5000 });
   const setup = trpc.session.requestSetup.useMutation({ onSuccess: () => status.refetch() });
   const verify = trpc.session.requestVerify.useMutation({ onSuccess: () => status.refetch() });
+  const signOut = trpc.session.requestSignOut.useMutation({ onSuccess: () => status.refetch() });
   const valid = status.data?.valid ?? false;
   const confirm = useConfirm();
   const toast = useToast();
@@ -34,6 +35,25 @@ export default function SessionPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       toast.error(t('toast.session.setup.fail'), msg);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const ok = await confirm({
+      eyebrow: 'Disconnect',
+      title: 'ออกจากระบบเฟซบุ๊ก?',
+      description:
+        'ระบบจะลบ session profile ทั้งหมด (cookies, login state) ออกจากเครื่อง — ครั้งหน้าต้องเปิดเบราว์เซอร์แล้ว login ใหม่จากศูนย์ Campaign ที่กำลังรันอาจหยุดกลางคัน',
+      confirmLabel: 'Sign out',
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+    try {
+      await loading.wrap('Signing out…', () => signOut.mutateAsync());
+      toast.success('Signed out', 'Session profile removed. Open browser to log in again when ready.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      toast.error('Sign out failed', msg);
     }
   };
 
@@ -172,6 +192,24 @@ export default function SessionPage() {
           </div>
         </div>
       </Surface>
+
+      {/* Disconnect — keep visually quiet; this is a destructive escape hatch */}
+      <div className="flex items-center justify-between border-t border-line pt-6">
+        <div>
+          <span className="small-caps text-ink-faint">Switch account</span>
+          <p className="mt-1 text-sm text-ink-muted">
+            ลบ session profile ทั้งหมดเพื่อเริ่มเชื่อมต่อบัญชี FB ใหม่จากศูนย์
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSignOut}
+          disabled={signOut.isPending}
+        >
+          {signOut.isPending ? 'Signing out…' : 'Sign out'}
+        </Button>
+      </div>
     </div>
   );
 }

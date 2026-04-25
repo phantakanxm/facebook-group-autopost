@@ -27,4 +27,15 @@ export const sessionRouter = router({
     });
     return { ok: true };
   }),
+
+  /** Disconnect: worker will wipe the Playwright profile dir so the next
+   * "Open browser to log in" starts from a clean slate. Use when switching
+   * to a different FB account or after an enforcement event. */
+  requestSignOut: publicProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.user.update({
+      where: { id: ctx.userId },
+      data: { sessionPath: 'pending-signout', sessionValid: false },
+    });
+    return { ok: true };
+  }),
 });
