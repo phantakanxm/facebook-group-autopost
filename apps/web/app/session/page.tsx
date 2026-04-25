@@ -49,8 +49,18 @@ export default function SessionPage() {
     });
     if (!ok) return;
     try {
-      await loading.wrap('Signing out…', () => signOut.mutateAsync());
-      toast.success('Signed out', 'Session profile removed. Open browser to log in again when ready.');
+      const result = await loading.wrap('Signing out…', () => signOut.mutateAsync());
+      if (result.removed) {
+        toast.success('Signed out', 'Session profile removed. Open browser to log in again with a different account.');
+      } else {
+        // Folder didn't exist or rm failed — still treat as signed out (DB cleared)
+        toast.info(
+          'Signed out',
+          result.error
+            ? `Session marked invalid. Could not delete profile: ${result.error}`
+            : 'No session profile to remove. Cleared anyway.',
+        );
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       toast.error('Sign out failed', msg);

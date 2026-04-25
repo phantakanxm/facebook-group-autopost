@@ -1,5 +1,8 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
+import { rmSync } from 'node:fs';
+import path from 'node:path';
+import { resolveAppPaths } from '@app/shared/paths';
 
 export const sessionRouter = router({
   status: publicProcedure.query(async ({ ctx }) => {
@@ -28,14 +31,38 @@ export const sessionRouter = router({
     return { ok: true };
   }),
 
-  /** Disconnect: worker will wipe the Playwright profile dir so the next
-   * "Open browser to log in" starts from a clean slate. Use when switching
-   * to a different FB account or after an enforcement event. */
+  /** Disconnect: wipe the Playwright profile dir IN-PROCESS so "Open
+   * browser to log in" right after starts from a clean slate. We used to
+   * hand this off to the worker via a 'pending-signout' state, but a
+   * subsequent 'pending-setup' write (from clicking the login button)
+   * raced and silently overwrote it before the worker could pick it up.
+   *
+   * The web process and the worker share the same SESSION_ROOT env var
+   * (Electron main sets it for both), so we can resolve the same path
+   * here and delete it synchronously before returning. */
   requestSignOut: publicProcedure.mutation(async ({ ctx }) => {
+    const repoRoot = path.resolve(process.cwd(), '..', '..');
+    const { sessionRoot } = resolveAppPaths({ repoRoot });
+    const userSessionDir = path.join(sessionRoot, ctx.userId);
+
+    let removed = false;
+    let removeError: string | undefined;
+    try {
+      rmSync(userSessionDir, { recursive: true, force: true });
+      removed = true;
+    } catch (err) {
+      removeError = err instanceof Error ? err.message : String(err);
+    }
+
     await ctx.prisma.user.update({
       where: { id: ctx.userId },
-      data: { sessionPath: 'pending-signout', sessionValid: false },
+      data: {
+        sessionPath: null,
+        sessionValid: false,
+        sessionChecked: new Date(),
+      },
     });
-    return { ok: true };
+
+    return { ok: true, removed, error: removeError };
   }),
 });
