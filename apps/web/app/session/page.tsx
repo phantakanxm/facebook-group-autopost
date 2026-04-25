@@ -40,30 +40,21 @@ export default function SessionPage() {
 
   const handleSignOut = async () => {
     const ok = await confirm({
-      eyebrow: 'Disconnect',
-      title: 'ออกจากระบบเฟซบุ๊ก?',
+      eyebrow: 'Switch account',
+      title: 'รีเซ็ตทั้งหมด เพื่อเชื่อมต่อบัญชี FB ใหม่?',
       description:
-        'ระบบจะลบ session profile ทั้งหมด (cookies, login state) ออกจากเครื่อง — ครั้งหน้าต้องเปิดเบราว์เซอร์แล้ว login ใหม่จากศูนย์ Campaign ที่กำลังรันอาจหยุดกลางคัน',
-      confirmLabel: 'Sign out',
+        'ระบบจะลบ: (1) session profile (cookies/login), (2) กลุ่ม FB ทั้งหมดที่เคย sync, (3) แคมเปญ + batch + ประวัติการส่งทุกรายการ, (4) ไฟล์รูป/วิดีโอที่เคยอัพโหลด — ทั้งหมดนี้กู้คืนไม่ได้',
+      confirmLabel: 'Reset & Sign out',
       cancelLabel: t('common.cancel'),
     });
     if (!ok) return;
     try {
-      const result = await loading.wrap('Signing out…', () => signOut.mutateAsync());
-      if (result.removed) {
-        toast.success('Signed out', 'Session profile removed. Open browser to log in again with a different account.');
-      } else {
-        // Folder didn't exist or rm failed — still treat as signed out (DB cleared)
-        toast.info(
-          'Signed out',
-          result.error
-            ? `Session marked invalid. Could not delete profile: ${result.error}`
-            : 'No session profile to remove. Cleared anyway.',
-        );
-      }
+      const result = await loading.wrap('Wiping all data…', () => signOut.mutateAsync());
+      const summary = `ลบ ${result.groups} กลุ่ม · ${result.campaigns} แคมเปญ · ${result.postLogs} log`;
+      toast.success('Reset complete', summary);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      toast.error('Sign out failed', msg);
+      toast.error('Reset failed', msg);
     }
   };
 
@@ -203,12 +194,13 @@ export default function SessionPage() {
         </div>
       </Surface>
 
-      {/* Disconnect — keep visually quiet; this is a destructive escape hatch */}
+      {/* Switch account — destructive escape hatch; keep visually quiet */}
       <div className="flex items-center justify-between border-t border-line pt-6">
         <div>
           <span className="small-caps text-ink-faint">Switch account</span>
           <p className="mt-1 text-sm text-ink-muted">
-            ลบ session profile ทั้งหมดเพื่อเริ่มเชื่อมต่อบัญชี FB ใหม่จากศูนย์
+            รีเซ็ตทั้งหมด: session, กลุ่ม, แคมเปญ, ประวัติการส่ง, ไฟล์อัพโหลด
+            <span className="block text-ink-faint">ใช้เมื่อต้องการเริ่มกับบัญชี FB ใหม่จากศูนย์</span>
           </p>
         </div>
         <Button
@@ -217,7 +209,7 @@ export default function SessionPage() {
           onClick={handleSignOut}
           disabled={signOut.isPending}
         >
-          {signOut.isPending ? 'Signing out…' : 'Sign out'}
+          {signOut.isPending ? 'Wiping…' : 'Reset & Sign out'}
         </Button>
       </div>
     </div>

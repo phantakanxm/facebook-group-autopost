@@ -31,27 +31,68 @@ export const sessionRouter = router({
     return { ok: true };
   }),
 
-  /** Disconnect: wipe the Playwright profile dir IN-PROCESS so "Open
-   * browser to log in" right after starts from a clean slate. We used to
-   * hand this off to the worker via a 'pending-signout' state, but a
-   * subsequent 'pending-setup' write (from clicking the login button)
-   * raced and silently overwrote it before the worker could pick it up.
+  /** Switch account: full reset. Wipes the Playwright profile dir, all
+   * groups/campaigns/batches/postLogs/uploads belonging to this user, and
+   * clears session flags. The User row itself + Setting are kept (so
+   * preferences survive). Use when handing the app to a different FB
+   * account from scratch.
    *
-   * The web process and the worker share the same SESSION_ROOT env var
-   * (Electron main sets it for both), so we can resolve the same path
-   * here and delete it synchronously before returning. */
+   * Done in-process (web tRPC) instead of via worker poll to avoid the
+   * race where 'pending-setup' overwrote 'pending-signout' before the
+   * worker tick. */
   requestSignOut: publicProcedure.mutation(async ({ ctx }) => {
     const repoRoot = path.resolve(process.cwd(), '..', '..');
-    const { sessionRoot } = resolveAppPaths({ repoRoot });
+    const { sessionRoot, uploadRoot } = resolveAppPaths({ repoRoot });
     const userSessionDir = path.join(sessionRoot, ctx.userId);
 
-    let removed = false;
-    let removeError: string | undefined;
+    // Count what we'll remove so the caller can show a meaningful toast.
+    const counts = {
+      groups: await ctx.prisma.group.count({ where: { userId: ctx.userId } }),
+      campaigns: await ctx.prisma.campaign.count({ where: { userId: ctx.userId } }),
+      postLogs: await ctx.prisma.postLog.count({
+        where: { campaign: { userId: ctx.userId } },
+      }),
+    };
+
+    // Delete DB rows in dependency order (no schema-level cascades for
+    // group→postLog or group→listingBatchGroup, so do it manually).
+    await ctx.prisma.$transaction([
+      ctx.prisma.postLog.deleteMany({
+        where: { campaign: { userId: ctx.userId } },
+      }),
+      ctx.prisma.listingBatchGroup.deleteMany({
+        where: { batch: { campaign: { userId: ctx.userId } } },
+      }),
+      ctx.prisma.listingBatch.deleteMany({
+        where: { campaign: { userId: ctx.userId } },
+      }),
+      ctx.prisma.campaignGroup.deleteMany({
+        where: { campaign: { userId: ctx.userId } },
+      }),
+      ctx.prisma.campaign.deleteMany({
+        where: { userId: ctx.userId },
+      }),
+      ctx.prisma.group.deleteMany({
+        where: { userId: ctx.userId },
+      }),
+    ]);
+
+    // Wipe the Playwright profile (FB cookies / login state).
+    let sessionRemoved = false;
     try {
       rmSync(userSessionDir, { recursive: true, force: true });
-      removed = true;
-    } catch (err) {
-      removeError = err instanceof Error ? err.message : String(err);
+      sessionRemoved = true;
+    } catch {
+      /* best-effort */
+    }
+
+    // Wipe uploaded media dir — campaigns referencing it are gone, so the
+    // files are now orphaned. Path is shared across users so just wipe
+    // contents (keep the dir itself for the next campaign).
+    try {
+      rmSync(uploadRoot, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
     }
 
     await ctx.prisma.user.update({
@@ -63,6 +104,6 @@ export const sessionRouter = router({
       },
     });
 
-    return { ok: true, removed, error: removeError };
+    return { ok: true, sessionRemoved, ...counts };
   }),
 });
