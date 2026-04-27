@@ -102,22 +102,36 @@ export const SELECTORS = {
     'role=spinbutton[name=/Square metres|Square meters|ตารางเมตร|ขนาด.*ตรม/i]',
     'role=textbox[name=/Square metres|Square meters|ตารางเมตร|ขนาด.*ตรม/i]',
   ],
-  // Location combobox + its suggestion listbox
-  // FB's location input is a role=combobox with aria-autocomplete="list" — accessible
-  // name varies (sometimes blank, sometimes "Location", sometimes "Property location").
-  // Try role-based first, then aria-label, then placeholder, then generic autocomplete
-  // attributes scoped inside the dialog.
+  // Location combobox + its suggestion listbox.
+  // FB's location input is a role=combobox with aria-autocomplete="list" —
+  // accessible name varies (sometimes blank, sometimes "Location", sometimes
+  // "Property location"). The previous fallback chain caught Messenger's own
+  // search-bar (aria-label="ค้นหา Messenger") because that input ALSO has
+  // aria-autocomplete="list" inside its own role=dialog.
+  //
+  // We now: (a) scope every fallback to a dialog that contains a listing-form
+  // marker like "ราคา" or "จำนวนห้อง" or "อสังหา", and (b) explicitly exclude
+  // Messenger search via :not([aria-label*="Messenger" i]).
   listingLocationCombobox: [
     'role=combobox[name=/Location|Property location|ตำแหน่ง|ที่อยู่|สถานที่|ที่ตั้ง/i]',
     'role=textbox[name=/Location|Property location|ตำแหน่ง|ที่อยู่|สถานที่|ที่ตั้ง/i]',
-    '[role="dialog"] input[aria-label*="location" i]',
-    '[role="dialog"] input[aria-label*="ตำแหน่ง"]',
-    '[role="dialog"] input[aria-label*="ที่อยู่"]',
-    '[role="dialog"] input[placeholder*="Location" i]',
-    '[role="dialog"] input[placeholder*="ตำแหน่ง"]',
-    '[role="dialog"] input[aria-autocomplete="list"]',
-    '[role="dialog"] input[aria-autocomplete="both"]',
-    '[role="dialog"] input[type="search"]',
+    // Dialog scoped to the listing form (any of these Thai/English markers
+    // pin it to the right modal — no false Messenger match):
+    '[role="dialog"]:has-text("ราคา") input[aria-label*="location" i]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[aria-label*="ตำแหน่ง"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[aria-label*="ที่ตั้ง"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[aria-label*="ที่อยู่"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[aria-label*="สถานที่"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[placeholder*="Location" i]',
+    '[role="dialog"]:has-text("ราคา") input[placeholder*="ตำแหน่ง"]',
+    '[role="dialog"]:has-text("ราคา") input[placeholder*="ที่ตั้ง"]',
+    '[role="dialog"]:has-text("ราคา") input[aria-autocomplete="list"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[aria-autocomplete="both"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ราคา") input[type="search"]:not([aria-label*="Messenger" i])',
+    // Also pin via "จำนวนห้อง" or "อสังหา" markers in case "ราคา" is hidden
+    // behind scroll on small viewports.
+    '[role="dialog"]:has-text("จำนวนห้อง") input[aria-autocomplete="list"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("อสังหา") input[aria-autocomplete="list"]:not([aria-label*="Messenger" i])',
   ],
   listingLocationFirstOption: '[role="listbox"] >> role=option >> nth=0',
   // Description textbox. Confirmed Thai: "คำอธิบายอสังหาริมทรัพย์".

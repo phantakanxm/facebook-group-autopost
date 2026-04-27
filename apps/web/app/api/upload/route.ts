@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveUploadedFile } from '@/lib/files';
-import { MAX_IMAGES_PER_POST } from '@app/shared';
+import { MAX_PHOTOS_PER_LISTING } from '@app/shared';
 
-const MAX_IMAGES_BYTES = 50 * 1024 * 1024;
+// Listing campaigns accept up to 50 photos (FB caps at 50). Regular post
+// campaigns hit FB's own composer limit when posting; we don't pre-cap here.
+const MAX_IMAGES_BYTES = 250 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
 const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'avif']);
@@ -24,8 +26,8 @@ export async function POST(req: NextRequest) {
   if (kind === 'video' && files.length !== 1) {
     return NextResponse.json({ error: 'video must be exactly 1 file' }, { status: 400 });
   }
-  if (kind === 'images' && files.length > MAX_IMAGES_PER_POST) {
-    return NextResponse.json({ error: `too many images (max ${MAX_IMAGES_PER_POST})` }, { status: 400 });
+  if (kind === 'images' && files.length > MAX_PHOTOS_PER_LISTING) {
+    return NextResponse.json({ error: `too many images (max ${MAX_PHOTOS_PER_LISTING})` }, { status: 400 });
   }
 
   // Validate extensions match the declared kind
