@@ -15,6 +15,11 @@ export async function humanMouseMove(page: Page, x: number, y: number): Promise<
 export async function humanClick(page: Page, selector: string): Promise<void> {
   const el = page.locator(selector).first();
   await el.waitFor({ state: 'visible', timeout: 15_000 });
+  // page.mouse.click() uses viewport coordinates. If the element is below the
+  // fold (e.g. after we humanScroll-d and the Next button is past the
+  // viewport), boundingBox() returns y > viewport.height and the click hits
+  // empty space. scrollIntoViewIfNeeded is a no-op when already in view.
+  await el.scrollIntoViewIfNeeded({ timeout: 5_000 }).catch(() => undefined);
   const box = await el.boundingBox();
   if (!box) throw new Error(`humanClick: no bounding box for ${selector}`);
   const offsetX = box.width * (0.3 + Math.random() * 0.4);
