@@ -350,7 +350,7 @@ export function CampaignForm({
                           key={it.path}
                           className="group relative overflow-hidden rounded-md border border-line bg-surface"
                         >
-                          <div className="relative aspect-square w-full overflow-hidden bg-neutral-100">
+                          <div className="relative aspect-square w-full overflow-hidden bg-surface">
                             {mediaType === 'video' ? (
                               <video
                                 src={it.url}
@@ -386,7 +386,7 @@ export function CampaignForm({
                               type="button"
                               onClick={() => removeMediaItem(i)}
                               aria-label="Remove"
-                              className="shrink-0 rounded p-1 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600"
+                              className="shrink-0 rounded p-1 text-ink-muted transition-colors hover:bg-[color-mix(in_oklch,var(--danger)_10%,transparent)] hover:text-[var(--danger)]"
                             >
                               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                                 <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

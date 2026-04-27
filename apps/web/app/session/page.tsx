@@ -40,21 +40,29 @@ export default function SessionPage() {
 
   const handleSignOut = async () => {
     const ok = await confirm({
-      eyebrow: 'Switch account',
-      title: 'รีเซ็ตทั้งหมด เพื่อเชื่อมต่อบัญชี FB ใหม่?',
-      description:
-        'ระบบจะลบ: (1) session profile (cookies/login), (2) กลุ่ม FB ทั้งหมดที่เคย sync, (3) แคมเปญ + batch + ประวัติการส่งทุกรายการ, (4) ไฟล์รูป/วิดีโอที่เคยอัพโหลด — ทั้งหมดนี้กู้คืนไม่ได้',
-      confirmLabel: 'Reset & Sign out',
-      cancelLabel: t('common.cancel'),
+      eyebrow: t('confirm.session.signout.eyebrow'),
+      title: t('confirm.session.signout.title'),
+      description: t('confirm.session.signout.desc'),
+      confirmLabel: t('confirm.session.signout.cta'),
+      cancelLabel: t('confirm.session.signout.keep'),
+      tone: 'danger',
     });
     if (!ok) return;
     try {
-      const result = await loading.wrap('Wiping all data…', () => signOut.mutateAsync());
-      const summary = `ลบ ${result.groups} กลุ่ม · ${result.campaigns} แคมเปญ · ${result.postLogs} log`;
-      toast.success('Reset complete', summary);
+      const result = await loading.wrap(t('common.working.signout'), () =>
+        signOut.mutateAsync(),
+      );
+      toast.success(
+        t('toast.session.signout.ok'),
+        t('toast.session.signout.summary', {
+          g: result.groups,
+          c: result.campaigns,
+          l: result.postLogs,
+        }),
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      toast.error('Reset failed', msg);
+      toast.error(t('toast.session.signout.fail'), msg);
     }
   };
 
@@ -195,12 +203,12 @@ export default function SessionPage() {
       </Surface>
 
       {/* Switch account — destructive escape hatch; keep visually quiet */}
-      <div className="flex items-center justify-between border-t border-line pt-6">
-        <div>
-          <span className="small-caps text-ink-faint">Switch account</span>
+      <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <span className="small-caps text-ink-faint">{t('session.signout.eyebrow')}</span>
           <p className="mt-1 text-sm text-ink-muted">
-            รีเซ็ตทั้งหมด: session, กลุ่ม, แคมเปญ, ประวัติการส่ง, ไฟล์อัพโหลด
-            <span className="block text-ink-faint">ใช้เมื่อต้องการเริ่มกับบัญชี FB ใหม่จากศูนย์</span>
+            {t('session.signout.body')}
+            <span className="mt-1 block text-ink-faint">{t('session.signout.body.sub')}</span>
           </p>
         </div>
         <Button
@@ -208,8 +216,9 @@ export default function SessionPage() {
           size="sm"
           onClick={handleSignOut}
           disabled={signOut.isPending}
+          className="self-start sm:self-auto"
         >
-          {signOut.isPending ? 'Wiping…' : 'Reset & Sign out'}
+          {signOut.isPending ? t('session.signout.loading') : t('session.signout.cta')}
         </Button>
       </div>
     </div>

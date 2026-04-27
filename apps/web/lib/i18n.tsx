@@ -36,6 +36,9 @@ const DICT = {
     'common.working.saveSettings': 'Saving settings',
     'common.working.openBrowser': 'Opening browser',
     'common.working.verify': 'Verifying session',
+    'common.working.signout': 'Wiping all data',
+    'common.working.cancelRunning': 'Stopping campaign',
+    'common.openExternal': 'Open in Facebook',
 
     /* ---------- Brand / shell ---------- */
     'brand.name': 'Atelier',
@@ -255,6 +258,32 @@ const DICT = {
     'camp.log.th.attempt': 'Attempt',
     'camp.log.th.error': 'Note / error',
     'camp.log.th.completed': 'Completed',
+    'camp.type.post': 'Regular post',
+    'camp.type.listing': 'Listing',
+    'camp.duplicate': 'Duplicate',
+    'camp.cancelRunning': 'Cancel running',
+    'confirm.cancelRunning.eyebrow': 'Stop running campaign',
+    'confirm.cancelRunning.title': 'Stop the campaign that is dispatching now?',
+    'confirm.cancelRunning.desc':
+      'Future groups and batches will not be sent. The group the worker is posting to right now will finish.',
+    'confirm.cancelRunning.cta': 'Cancel running',
+    'confirm.cancelRunning.keep': 'Keep going',
+    'camp.section.property': 'Property details',
+    'camp.prop.kind': 'Listing kind',
+    'camp.prop.type': 'Property type',
+    'camp.prop.bedrooms': 'Bedrooms',
+    'camp.prop.bathrooms': 'Bathrooms',
+    'camp.prop.price': 'Price',
+    'camp.prop.sqm': 'Square metres',
+    'camp.prop.location': 'Location',
+    'camp.section.batches.eyebrow': '{n} batches',
+    'camp.section.batches.title': 'Dispatch batches',
+    'camp.section.batches.empty':
+      'No batches yet. They will be created once the listing is scheduled.',
+    'camp.batch.label': 'Batch {n}',
+    'camp.batch.groupCount': '{n} groups',
+    'camp.batch.primary': 'Primary',
+    'camp.batch.share': 'Shared to',
 
     /* ---------- Campaign form ---------- */
     'form.eyebrow': 'Compose',
@@ -535,6 +564,24 @@ const DICT = {
     'toast.session.verify.fail': 'Session not ready',
     'toast.session.verify.fail.desc': 'Please try signing in again.',
 
+    'session.signout.eyebrow': 'Switch account',
+    'session.signout.body':
+      'Reset everything: session, groups, campaigns, delivery history, uploaded files.',
+    'session.signout.body.sub':
+      'Use this when you want to start fresh with a different Facebook account.',
+    'session.signout.cta': 'Reset & sign out',
+    'session.signout.loading': 'Wiping…',
+    'confirm.session.signout.eyebrow': 'Switch account',
+    'confirm.session.signout.title': 'Reset everything to connect a new account?',
+    'confirm.session.signout.desc':
+      'This will permanently remove (1) the FB session, (2) every synced group, (3) all campaigns, batches and delivery history, and (4) every uploaded image and video. None of it can be recovered.',
+    'confirm.session.signout.cta': 'Reset & sign out',
+    'confirm.session.signout.keep': 'Keep my data',
+    'toast.session.signout.ok': 'Reset complete',
+    'toast.session.signout.summary':
+      'Removed {g} groups · {c} campaigns · {l} log entries',
+    'toast.session.signout.fail': 'Reset failed',
+
     /* ---------- Locale ---------- */
     'locale.en': 'EN',
     'locale.th': 'TH',
@@ -563,6 +610,9 @@ const DICT = {
     'common.working.saveSettings': 'กำลังบันทึกการตั้งค่า',
     'common.working.openBrowser': 'กำลังเปิดเบราว์เซอร์',
     'common.working.verify': 'กำลังตรวจสอบเซสชัน',
+    'common.working.signout': 'กำลังล้างข้อมูลทั้งหมด',
+    'common.working.cancelRunning': 'กำลังหยุดแคมเปญ',
+    'common.openExternal': 'เปิดใน Facebook',
 
     /* ---------- Brand / shell ---------- */
     'brand.name': 'Atelier',
@@ -782,6 +832,32 @@ const DICT = {
     'camp.log.th.attempt': 'ครั้งที่',
     'camp.log.th.error': 'หมายเหตุ / ข้อผิดพลาด',
     'camp.log.th.completed': 'เสร็จเมื่อ',
+    'camp.type.post': 'โพสต์ทั่วไป',
+    'camp.type.listing': 'ประกาศขาย',
+    'camp.duplicate': 'ทำซ้ำ',
+    'camp.cancelRunning': 'ยกเลิกที่กำลังส่ง',
+    'confirm.cancelRunning.eyebrow': 'หยุดแคมเปญที่กำลังทำงาน',
+    'confirm.cancelRunning.title': 'หยุดแคมเปญที่กำลังส่งอยู่เลยไหม?',
+    'confirm.cancelRunning.desc':
+      'กลุ่มและรอบที่เหลือจะไม่ถูกส่ง แต่กลุ่มที่ระบบกำลังโพสต์อยู่ตอนนี้จะส่งให้เสร็จก่อน',
+    'confirm.cancelRunning.cta': 'หยุดเลย',
+    'confirm.cancelRunning.keep': 'ปล่อยทำงานต่อ',
+    'camp.section.property': 'รายละเอียดทรัพย์',
+    'camp.prop.kind': 'ประเภทประกาศ',
+    'camp.prop.type': 'ประเภททรัพย์',
+    'camp.prop.bedrooms': 'ห้องนอน',
+    'camp.prop.bathrooms': 'ห้องน้ำ',
+    'camp.prop.price': 'ราคา',
+    'camp.prop.sqm': 'พื้นที่ (ตร.ม.)',
+    'camp.prop.location': 'ทำเล',
+    'camp.section.batches.eyebrow': '{n} รอบ',
+    'camp.section.batches.title': 'รอบการส่ง',
+    'camp.section.batches.empty':
+      'ยังไม่มีรอบ ระบบจะสร้างให้หลังตั้งเวลาประกาศ',
+    'camp.batch.label': 'รอบที่ {n}',
+    'camp.batch.groupCount': '{n} กลุ่ม',
+    'camp.batch.primary': 'หลัก',
+    'camp.batch.share': 'แชร์ไปยัง',
 
     /* ---------- Campaign form ---------- */
     'form.eyebrow': 'สร้างใหม่',
@@ -1060,6 +1136,24 @@ const DICT = {
       'ระบบเข้าถึง Facebook ในฐานะบัญชีคุณได้แล้ว',
     'toast.session.verify.fail': 'ยังใช้ไม่ได้',
     'toast.session.verify.fail.desc': 'ลองล็อกอินใหม่อีกครั้งนะ',
+
+    'session.signout.eyebrow': 'เปลี่ยนบัญชี',
+    'session.signout.body':
+      'รีเซ็ตทั้งหมด: เซสชัน กลุ่ม แคมเปญ ประวัติการส่ง รวมถึงไฟล์อัปโหลด',
+    'session.signout.body.sub':
+      'ใช้เมื่อต้องการเริ่มต้นใหม่ด้วยบัญชี Facebook อีกบัญชี',
+    'session.signout.cta': 'รีเซ็ตและออกจากระบบ',
+    'session.signout.loading': 'กำลังลบ…',
+    'confirm.session.signout.eyebrow': 'เปลี่ยนบัญชี',
+    'confirm.session.signout.title': 'รีเซ็ตทุกอย่างเพื่อเชื่อมต่อบัญชีใหม่?',
+    'confirm.session.signout.desc':
+      'ระบบจะลบถาวร (1) เซสชัน Facebook, (2) กลุ่มที่ sync ไว้ทุกกลุ่ม, (3) แคมเปญ รอบ และประวัติการส่งทั้งหมด, (4) ไฟล์รูป/วิดีโอที่อัปโหลดทั้งหมด — ทั้งหมดนี้กู้คืนไม่ได้',
+    'confirm.session.signout.cta': 'รีเซ็ตและออก',
+    'confirm.session.signout.keep': 'เก็บข้อมูลไว้',
+    'toast.session.signout.ok': 'ล้างข้อมูลเรียบร้อย',
+    'toast.session.signout.summary':
+      'ลบไป {g} กลุ่ม · {c} แคมเปญ · {l} รายการ log',
+    'toast.session.signout.fail': 'รีเซ็ตไม่สำเร็จ',
 
     /* ---------- Locale ---------- */
     'locale.en': 'EN',

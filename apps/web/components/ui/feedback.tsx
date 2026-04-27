@@ -293,9 +293,9 @@ function ToastCard({
             </svg>
           </button>
         </div>
-        <div className="text-sm font-medium text-ink">{toast.title}</div>
+        <div className="text-sm font-medium text-ink line-clamp-2">{toast.title}</div>
         {toast.description && (
-          <div className="text-2xs text-ink-muted">{toast.description}</div>
+          <div className="text-2xs text-ink-muted line-clamp-3">{toast.description}</div>
         )}
       </div>
     </div>
@@ -315,20 +315,62 @@ function ConfirmDialog({
 }) {
   const [mounted, setMounted] = useState(false);
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!state) return;
 
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose(false);
-      if (e.key === 'Enter') onClose(true);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose(false);
+        return;
+      }
+      if (e.key === 'Enter') {
+        // Allow Enter on textarea / multiline inputs to flow normally if any
+        const target = e.target as HTMLElement | null;
+        if (target?.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        onClose(true);
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0]!;
+        const last = focusable[focusable.length - 1]!;
+        const active = document.activeElement;
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', onKey);
+
+    // Focus the primary action shortly after mount (after autofocus settles)
+    const focusTimer = window.setTimeout(() => {
+      const primary = dialogRef.current?.querySelector<HTMLElement>('button[data-primary="true"]');
+      primary?.focus();
+    }, 0);
+
     return () => {
       document.body.style.overflow = '';
       document.removeEventListener('keydown', onKey);
+      window.clearTimeout(focusTimer);
+      // Restore previous focus
+      previouslyFocused.current?.focus?.();
     };
   }, [state, onClose]);
 
@@ -359,6 +401,7 @@ function ConfirmDialog({
 
       {/* card */}
       <div
+        ref={dialogRef}
         className={cn(
           'relative w-full max-w-md overflow-hidden rounded-xl border border-line bg-raised',
           'shadow-pop animate-[confirm-in_0.32s_cubic-bezier(0.16,1,0.3,1)_both]',
@@ -441,7 +484,7 @@ function ConfirmDialog({
             variant="primary"
             size="sm"
             onClick={() => onClose(true)}
-            autoFocus
+            data-primary="true"
             className={cn(
               tone === 'danger' &&
                 'bg-[var(--danger)] border-[var(--danger)] hover:brightness-110',

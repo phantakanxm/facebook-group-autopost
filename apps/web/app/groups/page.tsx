@@ -286,17 +286,11 @@ export default function GroupsPage() {
                     </TD>
                     <TD>
                       {g.listingScannedAt === null ? (
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-2xs font-medium text-amber-800">
-                          {t('groups.badge.notScanned')}
-                        </span>
+                        <StatusPill tone="caution" dot>{t('groups.badge.notScanned')}</StatusPill>
                       ) : g.supportsListing ? (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-2xs font-medium text-green-800">
-                          {t('groups.badge.listingOk')}
-                        </span>
+                        <StatusPill tone="positive" dot>{t('groups.badge.listingOk')}</StatusPill>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-neutral-200 px-2 py-0.5 text-2xs font-medium text-neutral-700">
-                          {t('groups.badge.listingNo')}
-                        </span>
+                        <StatusPill tone="neutral">{t('groups.badge.listingNo')}</StatusPill>
                       )}
                     </TD>
                     <TD align="right" tabular muted>
