@@ -147,10 +147,19 @@ export const SELECTORS = {
     'role=button[name=/^\\s*(Publish|Post|Post listing|Post it|Create listing|Share|โพสต์|ลงประกาศ|เผยแพร่|แชร์)\\s*$/i]',
   ],
   listingPublishedBanner: 'text=/โพสต์แล้ว|Listing published|Posted successfully|Posted to/i',
-  // Share groups panel (step 2 after Next)
+  // Share groups panel (step 2 after Next). The dialog at this stage carries
+  // share-marker text like "เพิ่มรายการสินค้า" / "Add to other groups".
+  // Generic '[role="dialog"] input[type="search"]' previously caught the
+  // separate Messenger panel — scope every fallback to the share dialog AND
+  // exclude Messenger explicitly.
   shareGroupSearch: [
-    'role=searchbox[name=/Search groups|ค้นหากลุ่ม/i]',
-    '[role="dialog"] input[type="search"]',
+    'role=searchbox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ลงในกลุ่ม") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("แชร์") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("Add to") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("Share to") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"] input[type="search"]:not([aria-label*="Messenger" i])',
   ],
   // Success signals
   composerClosed: '[contenteditable="true"][role="textbox"]',

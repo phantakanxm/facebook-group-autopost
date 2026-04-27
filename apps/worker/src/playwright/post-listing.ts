@@ -214,9 +214,11 @@ export async function postListingBatch(
     }
     await humanDelay(500, 1_500);
 
-    // 10. Select share groups — try each selector candidate for each group name
+    // 10. Select share groups — type each group's name into the search,
+    //     wait for FB to filter the list, then click the matching checkbox.
     if (input.shareGroupNames.length > 0) {
       const search = await firstMatch(page, SELECTORS.shareGroupSearch);
+      log.info({ search, candidates: input.shareGroupNames.length }, 'share-group selection start');
       for (const name of input.shareGroupNames) {
         let clicked = false;
         try {
@@ -225,14 +227,17 @@ export async function postListingBatch(
             await page.locator(search).first().fill('');
             await humanDelay(150, 300);
             await page.keyboard.insertText(name);
-            await sleep(1_000);
+            // FB's filter takes longer for accounts with hundreds of groups —
+            // wait long enough for the rendered list to settle.
+            await sleep(2_500);
           }
           const candidateSelectors = shareGroupCheckboxByName(name);
           for (const sel of candidateSelectors) {
             const loc = page.locator(sel).first();
             if ((await loc.count()) === 0) continue;
             try {
-              await loc.waitFor({ state: 'visible', timeout: 2_500 });
+              await loc.waitFor({ state: 'visible', timeout: 3_000 });
+              await loc.scrollIntoViewIfNeeded({ timeout: 2_000 }).catch(() => undefined);
               await loc.click();
               clicked = true;
               log.info({ name, selector: sel }, 'share group clicked');
