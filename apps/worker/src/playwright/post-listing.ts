@@ -179,10 +179,31 @@ export async function postListingBatch(
     }
     await humanDelay(500, 1_500);
 
-    // 9. Click Next — then poll for page 2 to load (share groups or Publish button)
+    // 9. Click Next — but FB disables the Next button while photos are still
+    // uploading. With 50 photos on a slow connection that's a few minutes.
+    // Poll for the button to become enabled before clicking; humanClick
+    // bypasses Playwright's auto-wait and would otherwise fire on a disabled
+    // button (which FB silently ignores).
     await humanScroll(page);
     const nextBtn = await firstMatch(page, SELECTORS.listingNextButton);
     if (!nextBtn) return await fail('selector_not_found', 'Next button missing');
+    {
+      const nextLoc = page.locator(nextBtn).first();
+      const uploadDeadline = Date.now() + 4 * 60_000; // 4 minutes for slow uploads
+      let enabled = false;
+      while (Date.now() < uploadDeadline) {
+        try {
+          enabled = await nextLoc.isEnabled({ timeout: 1_000 });
+          if (enabled) break;
+        } catch {
+          /* keep polling */
+        }
+        await sleep(1_500);
+      }
+      if (!enabled) {
+        return await fail('transient', 'Next button stayed disabled — uploads probably timed out');
+      }
+    }
     await humanClick(page, nextBtn);
     // Poll up to 15s for page-2 indicators to appear
     const page2Deadline = Date.now() + 15_000;
