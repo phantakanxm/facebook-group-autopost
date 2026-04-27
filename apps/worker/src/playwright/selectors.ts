@@ -148,17 +148,28 @@ export const SELECTORS = {
   ],
   listingPublishedBanner: 'text=/โพสต์แล้ว|Listing published|Posted successfully|Posted to/i',
   // Share groups panel (step 2 after Next). The dialog at this stage carries
-  // share-marker text like "เพิ่มรายการสินค้า" / "Add to other groups".
-  // Generic '[role="dialog"] input[type="search"]' previously caught the
-  // separate Messenger panel — scope every fallback to the share dialog AND
-  // exclude Messenger explicitly.
+  // share-marker text like "เพิ่มรายการสินค้า" / "แชร์ไปยังอื่นๆ เพิ่มเติม" /
+  // "Add to other groups". Generic '[role="dialog"] input[type="search"]'
+  // previously caught the separate Messenger panel — scope every fallback to
+  // the share dialog AND exclude Messenger explicitly.
   shareGroupSearch: [
+    // Accessible-name match (no dialog scope needed if the placeholder is set)
     'role=searchbox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
+    'role=textbox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
+    'role=combobox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
+    // Dialog scoped — match the broadest set of share-panel marker phrases
     '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[type="search"]:not([aria-label*="Messenger" i])',
     '[role="dialog"]:has-text("ลงในกลุ่ม") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("ไปยังอื่นๆ") input[type="search"]:not([aria-label*="Messenger" i])',
     '[role="dialog"]:has-text("แชร์") input[type="search"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"]:has-text("เพิ่มเติม") input[type="search"]:not([aria-label*="Messenger" i])',
     '[role="dialog"]:has-text("Add to") input[type="search"]:not([aria-label*="Messenger" i])',
     '[role="dialog"]:has-text("Share to") input[type="search"]:not([aria-label*="Messenger" i])',
+    // placeholder-based fallbacks — FB sometimes uses placeholder instead of
+    // accessible name on the search input
+    '[role="dialog"] input[placeholder*="ค้นหา"]:not([aria-label*="Messenger" i])',
+    '[role="dialog"] input[placeholder*="Search" i]:not([aria-label*="Messenger" i])',
+    // Last-ditch generic
     '[role="dialog"] input[type="search"]:not([aria-label*="Messenger" i])',
   ],
   // Success signals
@@ -193,7 +204,11 @@ export async function firstMatch(
  *   3. A label/text node containing the group name (click toggles the checkbox)
  */
 export function shareGroupCheckboxByName(name: string): string[] {
-  const escapedRe = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Escape regex meta-chars AND the forward slash — Playwright's role-name
+  // regex uses /.../ delimiters, so an unescaped '/' inside the name (e.g.
+  // "อุดร/หนองคาย") closes the regex prematurely and the selector parser
+  // throws InvalidSelectorError on the trailing chars.
+  const escapedRe = name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
   const escapedCss = name.replace(/"/g, '\\"');
   return [
     `role=checkbox[name=/${escapedRe}/i]`,
