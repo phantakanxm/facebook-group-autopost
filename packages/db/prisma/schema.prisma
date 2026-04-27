@@ -128,8 +128,8 @@ model Setting {
   retryDelayMaxMs              Int @default(180000)
   stopAfterConsecutiveFailures Int @default(3)
 
-  delayBetweenBatchesMinMs Int @default(1800000)
-  delayBetweenBatchesMaxMs Int @default(3600000)
+  delayBetweenBatchesMinMs Int @default(300000)
+  delayBetweenBatchesMaxMs Int @default(600000)
   maxBatchesPerDay         Int @default(5)
 
   enableMouseMove        Boolean @default(true)
