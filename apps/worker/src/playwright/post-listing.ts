@@ -214,8 +214,33 @@ export async function postListingBatch(
     }
     await humanDelay(500, 1_500);
 
-    // 10. Select share groups — type each group's name into the search,
-    //     wait for FB to filter the list, then click the matching checkbox.
+    // 10a. Tick the Marketplace checkbox so the listing also lands on the
+    //      user's Marketplace alongside the chosen groups.
+    {
+      const mpSel = await firstMatch(page, SELECTORS.shareToMarketplace);
+      if (mpSel) {
+        try {
+          const mpLoc = page.locator(mpSel).first();
+          // Skip if already checked (idempotent — FB may default-check it)
+          const checked = await mpLoc.isChecked().catch(() => false);
+          if (!checked) {
+            await mpLoc.scrollIntoViewIfNeeded({ timeout: 2_000 }).catch(() => undefined);
+            await mpLoc.click();
+            log.info('Marketplace checkbox clicked');
+          } else {
+            log.info('Marketplace already checked');
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          log.warn({ err: msg }, 'failed to tick Marketplace, continuing');
+        }
+      } else {
+        log.info('Marketplace checkbox not found in share dialog');
+      }
+    }
+
+    // 10b. Select share groups — type each group's name into the search,
+    //      wait for FB to filter the list, then click the matching checkbox.
     if (input.shareGroupNames.length > 0) {
       const search = await firstMatch(page, SELECTORS.shareGroupSearch);
       log.info({ search, candidates: input.shareGroupNames.length }, 'share-group selection start');

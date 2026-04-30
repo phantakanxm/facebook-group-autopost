@@ -149,28 +149,37 @@ export const SELECTORS = {
   listingPublishedBanner: 'text=/โพสต์แล้ว|Listing published|Posted successfully|Posted to/i',
   // Share groups panel (step 2 after Next). The dialog at this stage carries
   // share-marker text like "เพิ่มรายการสินค้า" / "แชร์ไปยังอื่นๆ เพิ่มเติม" /
-  // "Add to other groups". Generic '[role="dialog"] input[type="search"]'
-  // previously caught the separate Messenger panel — scope every fallback to
-  // the share dialog AND exclude Messenger explicitly.
+  // "Add to other groups". MUST be dialog-scoped: a global role=combobox/
+  // searchbox match catches FB's header search bar (which has accessible
+  // name "ค้นหา Facebook" / "Search Facebook"), and we'd type group names
+  // there instead of in the share dialog.
   shareGroupSearch: [
-    // Accessible-name match (no dialog scope needed if the placeholder is set)
-    'role=searchbox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
-    'role=textbox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
-    'role=combobox[name=/Search groups|Search|ค้นหากลุ่ม|ค้นหา/i]',
-    // Dialog scoped — match the broadest set of share-panel marker phrases
-    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("ลงในกลุ่ม") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("ไปยังอื่นๆ") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("แชร์") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("เพิ่มเติม") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("Add to") input[type="search"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"]:has-text("Share to") input[type="search"]:not([aria-label*="Messenger" i])',
-    // placeholder-based fallbacks — FB sometimes uses placeholder instead of
-    // accessible name on the search input
-    '[role="dialog"] input[placeholder*="ค้นหา"]:not([aria-label*="Messenger" i])',
-    '[role="dialog"] input[placeholder*="Search" i]:not([aria-label*="Messenger" i])',
-    // Last-ditch generic
-    '[role="dialog"] input[type="search"]:not([aria-label*="Messenger" i])',
+    // Dialog-scoped role-based matches (preferred)
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") >> role=searchbox[name=/Search groups|ค้นหากลุ่ม|ค้นหา/i]',
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") >> role=textbox[name=/Search groups|ค้นหากลุ่ม|ค้นหา/i]',
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") >> role=combobox[name=/Search groups|ค้นหากลุ่ม|ค้นหา/i]',
+    '[role="dialog"]:has-text("ลงในกลุ่ม") >> role=searchbox[name=/Search|ค้นหา/i]',
+    '[role="dialog"]:has-text("ไปยังอื่นๆ") >> role=searchbox[name=/Search|ค้นหา/i]',
+    // Dialog-scoped CSS-based fallbacks
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("ลงในกลุ่ม") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("ไปยังอื่นๆ") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("แชร์") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("เพิ่มเติม") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("Add to") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    '[role="dialog"]:has-text("Share to") input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+    // placeholder-based fallbacks
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[placeholder*="ค้นหา"]',
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") input[placeholder*="Search" i]',
+    // Last-ditch generic — must still be dialog scoped so we don't grab the header search
+    '[role="dialog"] input[type="search"]:not([aria-label*="Messenger" i]):not([aria-label*="Facebook" i])',
+  ],
+  // Marketplace checkbox in the share-groups panel — listings can also be
+  // posted to user's Marketplace surface alongside the chosen groups.
+  shareToMarketplace: [
+    '[role="dialog"]:has-text("เพิ่มรายการสินค้า") >> role=checkbox[name=/^\\s*Marketplace\\s*$/i]',
+    '[role="dialog"]:has-text("Marketplace") >> role=checkbox[name=/^\\s*Marketplace\\s*$/i]',
+    'role=checkbox[name=/^\\s*Marketplace\\s*$/i]',
   ],
   // Success signals
   composerClosed: '[contenteditable="true"][role="textbox"]',
